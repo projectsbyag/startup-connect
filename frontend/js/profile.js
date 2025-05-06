@@ -70,13 +70,15 @@ const ProfilePage = {
         
         if (loginBtn) {
             loginBtn.addEventListener('click', () => {
-                document.getElementById('login-modal').classList.remove('hidden');
+                // Initialize and show login modal through the app instance
+                app.showLoginModal();
             });
         }
         
         if (signupBtn) {
             signupBtn.addEventListener('click', () => {
-                document.getElementById('signup-modal').classList.remove('hidden');
+                // Initialize and show signup modal through the app instance
+                app.showSignupModal();
             });
         }
         
