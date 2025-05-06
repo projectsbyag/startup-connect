@@ -1,0 +1,334 @@
+const Startup = require('../models/Startup.js');
+const User = require('../models/User.js');
+
+// @desc    Get all startups
+// @route   GET /api/startups
+// @access  Public
+exports.getStartups = async (req, res, next) => {
+    try {
+        // Build query
+        let query = { isActive: true };
+        
+        // Filter by industry
+        if (req.query.industry) {
+            query.industry = req.query.industry;
+        }
+        
+        // Filter by funding stage
+        if (req.query.funding) {
+            query.funding = req.query.funding;
+        }
+        
+        // Filter by location
+        if (req.query.location) {
+            query.location = { $regex: req.query.location, $options: 'i' };
+        }
+        
+        // Pagination
+        const page = parseInt(req.query.page, 10) || 1;
+        const limit = parseInt(req.query.limit, 10) || 10;
+        const startIndex = (page - 1) * limit;
+        const endIndex = page * limit;
+        const total = await Startup.countDocuments(query);
+        
+        // Execute query
+        const startups = await Startup.find(query)
+            .skip(startIndex)
+            .limit(limit)
+            .sort({ createdAt: -1 });
+        
+        // Pagination result
+        const pagination = {};
+        
+        if (endIndex < total) {
+            pagination.next = {
+                page: page + 1,
+                limit
+            };
+        }
+        
+        if (startIndex > 0) {
+            pagination.prev = {
+                page: page - 1,
+                limit
+            };
+        }
+        
+        res.status(200).json({
+            success: true,
+            count: startups.length,
+            total,
+            pagination,
+            startups
+        });
+        
+    } catch (error) {
+        next(error);
+    }
+};
+
+// @desc    Get single startup
+// @route   GET /api/startups/:id
+// @access  Public
+exports.getStartup = async (req, res, next) => {
+    try {
+        const startup = await Startup.findById(req.params.id);
+        
+        if (!startup) {
+            return res.status(404).json({
+                success: false,
+                message: 'Startup not found'
+            });
+        }
+        
+        res.status(200).json({
+            success: true,
+            data: startup
+        });
+        
+    } catch (error) {
+        next(error);
+    }
+};
+
+// @desc    Get startup by user ID
+// @route   GET /api/startups/user/:userId
+// @access  Private
+exports.getStartupByUserId = async (req, res, next) => {
+    try {
+        const userId = req.params.userId || req.user.id;
+        
+        const startup = await Startup.findOne({ userId });
+        
+        if (!startup) {
+            return res.status(404).json({
+                success: false,
+                message: 'Startup profile not found'
+            });
+        }
+        
+        res.status(200).json({
+            success: true,
+            startup
+        });
+        
+    } catch (error) {
+        next(error);
+    }
+};
+
+// @desc    Create new startup
+// @route   POST /api/startups
+// @access  Private
+exports.createStartup = async (req, res, next) => {
+    try {
+        // Check if user is a startup
+        if (req.user.userType !== 'startup') {
+            return res.status(403).json({
+                success: false,
+                message: 'Only startup accounts can create startup profiles'
+            });
+        }
+        
+        // Check if user already has a startup profile
+        const existingStartup = await Startup.findOne({ userId: req.user.id });
+        
+        if (existingStartup) {
+            return res.status(400).json({
+                success: false,
+                message: 'User already has a startup profile'
+            });
+        }
+        
+        // Create startup profile
+        req.body.userId = req.user.id;
+        
+        const startup = await Startup.create(req.body);
+        
+        res.status(201).json({
+            success: true,
+            data: startup
+        });
+        
+    } catch (error) {
+        next(error);
+    }
+};
+
+// @desc    Update startup
+// @route   PUT /api/startups/:id
+// @access  Private
+exports.updateStartup = async (req, res, next) => {
+    try {
+        let startup = await Startup.findById(req.params.id);
+        
+        if (!startup) {
+            return res.status(404).json({
+                success: false,
+                message: 'Startup not found'
+            });
+        }
+        
+        // Make sure user owns the startup profile
+        if (startup.userId.toString() !== req.user.id && req.user.userType !== 'admin') {
+            return res.status(403).json({
+                success: false,
+                message: 'Not authorized to update this startup profile'
+            });
+        }
+        
+        // Update startup
+        startup = await Startup.findByIdAndUpdate(req.params.id, req.body, {
+            new: true,
+            runValidators: true
+        });
+        
+        res.status(200).json({
+            success: true,
+            data: startup
+        });
+        
+    } catch (error) {
+        next(error);
+    }
+};
+
+// @desc    Delete startup
+// @route   DELETE /api/startups/:id
+// @access  Private
+exports.deleteStartup = async (req, res, next) => {
+    try {
+        const startup = await Startup.findById(req.params.id);
+        
+        if (!startup) {
+            return res.status(404).json({
+                success: false,
+                message: 'Startup not found'
+            });
+        }
+        
+        // Make sure user owns the startup profile
+        if (startup.userId.toString() !== req.user.id && req.user.userType !== 'admin') {
+            return res.status(403).json({
+                success: false,
+                message: 'Not authorized to delete this startup profile'
+            });
+        }
+        
+        await startup.remove();
+        
+        res.status(200).json({
+            success: true,
+            message: 'Startup profile deleted'
+        });
+        
+    } catch (error) {
+        next(error);
+    }
+};
+
+// @desc    Upload startup document
+// @route   POST /api/startups/documents
+// @access  Private
+exports.uploadDocument = async (req, res, next) => {
+    try {
+        if (!req.files || !req.files.document) {
+            return res.status(400).json({
+                success: false,
+                message: 'Please upload a file'
+            });
+        }
+        
+        const file = req.files.document;
+        
+        // Make sure the file is a valid document
+        if (!file.mimetype.match(/\/(pdf|msword|vnd.openxmlformats-officedocument|vnd.ms-excel)/)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Please upload a valid document (PDF, Word, Excel, etc.)'
+            });
+        }
+        
+        // Check file size (limit to 10 MB)
+        if (file.size > 10 * 1024 * 1024) {
+            return res.status(400).json({
+                success: false,
+                message: 'File size should be less than 10 MB'
+            });
+        }
+        
+        // Find startup
+        const startup = await Startup.findOne({ userId: req.user.id });
+        
+        if (!startup) {
+            return res.status(404).json({
+                success: false,
+                message: 'Startup profile not found'
+            });
+        }
+        
+        // Create custom filename
+        const fileName = `startup_${startup._id}_${Date.now()}${path.parse(file.name).ext}`;
+        
+        // Upload file to S3 (in a real app)
+        // For now, we'll assume the file is uploaded and return a dummy URL
+        const fileUrl = `https://startupconnect-files.s3.amazonaws.com/${fileName}`;
+        
+        // Add document to startup profile
+        startup.documents.push({
+            name: req.body.name || file.name,
+            fileUrl,
+            fileType: file.mimetype
+        });
+        
+        await startup.save();
+        
+        res.status(200).json({
+            success: true,
+            data: startup.documents[startup.documents.length - 1]
+        });
+        
+    } catch (error) {
+        next(error);
+    }
+};
+
+// @desc    Get startup suggested matches
+// @route   GET /api/startups/:id/matches
+// @access  Private
+exports.getStartupMatches = async (req, res, next) => {
+    try {
+        const startup = await Startup.findById(req.params.id);
+        
+        if (!startup) {
+            return res.status(404).json({
+                success: false,
+                message: 'Startup not found'
+            });
+        }
+        
+        // Make sure user owns the startup or is an investor
+        if (startup.userId.toString() !== req.user.id && req.user.userType !== 'investor') {
+            return res.status(403).json({
+                success: false,
+                message: 'Not authorized to view these matches'
+            });
+        }
+        
+        // Find matching investors based on industry and funding stage
+        const matchingInvestors = await Investor.find({
+            focus: startup.industry,
+            stage: startup.funding,
+            isActive: true
+        }).limit(5);
+        
+        res.status(200).json({
+            success: true,
+            count: matchingInvestors.length,
+            data: matchingInvestors
+        });
+        
+    } catch (error) {
+        next(error);
+    }
+};
