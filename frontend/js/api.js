@@ -234,8 +234,8 @@ class ApiService {
      * @param {string} id - Startup ID
      * @returns {Promise} - Startup data
      */
-    async getStartup(id) {
-        return this.get(`/startups/${id}`);
+    async getStartup(startupId) {
+        return this.get(`/startups/${startupId}`);
     }
 
     /**
@@ -291,8 +291,20 @@ class ApiService {
      * @param {string} id - Investor ID
      * @returns {Promise} - Investor data
      */
-    async getInvestor(id) {
-        return this.get(`/investors/${id}`);
+    async getInvestor(investorId) {
+        try {
+            console.log('Fetching investor:', investorId);
+            const response = await this.get(`/investors/${investorId}`);
+            
+            if (!response || !response.investor) {
+                throw new Error('Invalid investor data received');
+            }
+            
+            return response;
+        } catch (error) {
+            console.error('Error fetching investor:', error);
+            throw error;
+        }
     }
 
     /**
@@ -332,8 +344,8 @@ class ApiService {
      * @param {string} conversationId - Conversation ID
      * @returns {Promise} - List of messages
      */
-    async getMessages(conversationId) {
-        return this.get(`/messages/conversations/${conversationId}`);
+    async getMessages(id) {
+        return this.get(`/messages/conversations/${id}`);
     }
     
     /**

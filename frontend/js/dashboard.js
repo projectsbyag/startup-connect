@@ -2095,6 +2095,381 @@ const DashboardPage = {
             console.error('Error loading matches:', error);
         }
     },
+    // ...existing code...
+
+    /**
+     * Load messages tab content
+     */
+    loadMessagesTabContent: async function() {
+        const container = document.getElementById('messages-tab');
+        if (!container) return;
+
+        container.innerHTML = `
+            <div class="p-6">
+                <h2 class="text-2xl font-bold text-startup-dark dark:text-white mb-6">Messages</h2>
+                <div class="py-4 text-center">
+                    <div class="spinner mx-auto mb-4"></div>
+                    <p class="text-gray-600 dark:text-gray-300">Loading messages<span class="loading-dots"></span></p>
+                </div>
+            </div>
+        `;
+
+        try {
+            const response = await API.getConversations();
+            const messages = response.messages || [];
+            
+            // Group messages by conversation
+            const conversations = messages.reduce((acc, msg) => {
+                const key = msg.senderId === Auth.getCurrentUser()._id ? msg.recipientId : msg.senderId;
+                if (!acc[key]) {
+                    acc[key] = [];
+                }
+                acc[key].push(msg);
+                return acc;
+            }, {});
+
+            container.innerHTML = `
+                <div class="p-6">
+                    <h2 class="text-2xl font-bold text-startup-dark dark:text-white mb-6">Messages</h2>
+                    
+                    <div class="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
+                        <div class="grid grid-cols-1 md:grid-cols-3">
+                            <!-- Conversations List -->
+                            <div class="border-r border-gray-200 dark:border-gray-700">
+                                <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+                                    <input type="text" 
+                                        id="search-conversations" 
+                                        placeholder="Search conversations..." 
+                                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-startup-primary focus:border-startup-primary dark:bg-gray-700 dark:text-white">
+                                </div>
+                                <div class="overflow-y-auto h-[600px]" id="conversations-list">
+                                    ${Object.entries(conversations).length > 0 ? 
+                                        Object.entries(conversations).map(([userId, msgs]) => {
+                                            const latestMsg = msgs[msgs.length - 1];
+                                            const unreadCount = msgs.filter(m => !m.read && m.recipientId === Auth.getCurrentUser()._id).length;
+                                            return `
+                                                <div class="conversation-item p-4 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer" data-user-id="${userId}">
+                                                    <div class="flex items-center justify-between">
+                                                        <div class="flex items-center">
+                                                            <div class="h-10 w-10 rounded-full bg-startup-primary text-white flex items-center justify-center">
+                                                                <span>${latestMsg.senderName?.substring(0, 2).toUpperCase() || 'U'}</span>
+                                                            </div>
+                                                            <div class="ml-3">
+                                                                <p class="text-sm font-medium text-startup-dark dark:text-white">${latestMsg.senderName || 'Unknown User'}</p>
+                                                                <p class="text-xs text-gray-500 dark:text-gray-400 truncate">
+                                                                    ${latestMsg.content.substring(0, 50)}${latestMsg.content.length > 50 ? '...' : ''}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                        ${unreadCount > 0 ? `
+                                                            <span class="inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-startup-primary rounded-full">
+                                                                ${unreadCount}
+                                                            </span>
+                                                        ` : ''}
+                                                    </div>
+                                                </div>
+                                            `;
+                                        }).join('') : 
+                                        `<div class="p-4 text-center text-gray-500 dark:text-gray-400">No messages yet</div>`
+                                    }
+                                </div>
+                            </div>
+
+                            <!-- Messages View -->
+                            <div class="col-span-2" id="messages-view">
+                                <div class="flex flex-col h-[600px]">
+                                    <!-- Initial state -->
+                                    <div class="flex-1 flex items-center justify-center text-gray-500 dark:text-gray-400">
+                                        <div class="text-center">
+                                            <i class="fas fa-comments text-5xl mb-4"></i>
+                                            <p>Select a conversation to view messages</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Setup conversation click handlers
+            document.querySelectorAll('.conversation-item').forEach(item => {
+                item.addEventListener('click', async (e) => {
+                    // Remove active state from all conversations
+                    document.querySelectorAll('.conversation-item').forEach(i => {
+                        i.classList.remove('bg-gray-100', 'dark:bg-gray-700');
+                    });
+                    
+                    // Add active state to clicked conversation
+                    item.classList.add('bg-gray-100', 'dark:bg-gray-700');
+                    
+                    const userId = item.dataset.userId;
+                    const conversationMsgs = conversations[userId];
+                    
+                    // Sort messages by date
+                    conversationMsgs.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+                    
+                    // Update messages view
+                    const messagesView = document.getElementById('messages-view');
+                    messagesView.innerHTML = `
+                        <div class="flex flex-col h-full">
+                            <!-- Header -->
+                            <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center">
+                                <div class="h-10 w-10 rounded-full bg-startup-primary text-white flex items-center justify-center">
+                                    <span>${conversationMsgs[0].senderName?.substring(0, 2).toUpperCase() || 'U'}</span>
+                                </div>
+                                <div class="ml-3">
+                                    <p class="text-sm font-medium text-startup-dark dark:text-white">${conversationMsgs[0].senderName || 'Unknown User'}</p>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400">
+                                        ${conversationMsgs[0].senderType || 'User'}
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            <!-- Messages -->
+                            <div class="flex-1 overflow-y-auto p-4 space-y-4" id="messages-container">
+                                ${conversationMsgs.map(msg => `
+                                    <div class="flex ${msg.senderId === Auth.getCurrentUser()._id ? 'justify-end' : 'justify-start'}">
+                                        <div class="max-w-[70%] ${msg.senderId === Auth.getCurrentUser()._id ? 
+                                            'bg-startup-primary text-white' : 
+                                            'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
+                                        } rounded-lg px-4 py-2 shadow">
+                                            <p class="text-sm">${msg.content}</p>
+                                            <p class="text-xs opacity-75 mt-1">
+                                                ${new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                            </p>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                            
+                            <!-- Message Input -->
+                            <div class="p-4 border-t border-gray-200 dark:border-gray-700">
+                                <form id="message-form" class="flex space-x-4">
+                                    <input type="hidden" id="recipient-id" value="${userId}">
+                                    <input type="text" 
+                                        id="message-input" 
+                                        placeholder="Type your message..." 
+                                        class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-startup-primary focus:border-startup-primary dark:bg-gray-700 dark:text-white">
+                                    <button type="submit" class="px-4 py-2 bg-startup-primary text-white rounded-md hover:bg-opacity-90 disabled:opacity-50">
+                                        <i class="fas fa-paper-plane"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    `;
+
+                    // Scroll to bottom of messages
+                    const messagesContainer = document.getElementById('messages-container');
+                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+                    // Setup message form
+                    const messageForm = document.getElementById('message-form');
+                    messageForm.addEventListener('submit', async (e) => {
+                        e.preventDefault();
+                        
+                        const input = document.getElementById('message-input');
+                        const recipientId = document.getElementById('recipient-id').value;
+                        const content = input.value.trim();
+                        
+                        if (!content) return;
+                        
+                        try {
+                            // Send message
+                            await API.sendMessage(recipientId, content);
+                            
+                            // Clear input
+                            input.value = '';
+                            
+                            // Refresh messages
+                            this.loadMessagesTabContent();
+                        } catch (error) {
+                            app.showToast(error.message || 'Failed to send message', 'error');
+                            console.error('Error sending message:', error);
+                        }
+                    });
+
+                    // Mark messages as read
+                    try {
+                        await API.markMessagesAsRead(userId);
+                    } catch (error) {
+                        console.error('Error marking messages as read:', error);
+                    }
+                });
+            });
+
+            // Setup search functionality
+            const searchInput = document.getElementById('search-conversations');
+            searchInput.addEventListener('input', (e) => {
+                const query = e.target.value.toLowerCase();
+                document.querySelectorAll('.conversation-item').forEach(item => {
+                    const name = item.querySelector('.text-sm').textContent.toLowerCase();
+                    const message = item.querySelector('.text-xs').textContent.toLowerCase();
+                    
+                    if (name.includes(query) || message.includes(query)) {
+                        item.style.display = 'block';
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
+            });
+        } catch (error) {
+            container.innerHTML = `
+                <div class="p-6">
+                    <h2 class="text-2xl font-bold text-startup-dark dark:text-white mb-6">Messages</h2>
+                    <div class="text-red-500">Failed to load messages: ${error.message}</div>
+                </div>
+            `;
+        }
+    },
+
+    /**
+     * Load connections tab content
+     */
+    loadConnectionsTabContent: async function() {
+        const container = document.getElementById('connections-tab');
+        if (!container) return;
+
+        container.innerHTML = `
+            <div class="p-6">
+                <h2 class="text-2xl font-bold text-startup-dark dark:text-white mb-6">Connections</h2>
+                <div class="py-4 text-center">
+                    <div class="spinner mx-auto mb-4"></div>
+                    <p class="text-gray-600 dark:text-gray-300">Loading connections<span class="loading-dots"></span></p>
+                </div>
+            </div>
+        `;
+
+        try {
+            const connections = await API.getConnections();
+            // Render connections content
+            // TODO: Implement connections UI
+            container.innerHTML = `
+                <div class="p-6">
+                    <h2 class="text-2xl font-bold text-startup-dark dark:text-white mb-6">Connections</h2>
+                    <p class="text-gray-600 dark:text-gray-300">Coming soon...</p>
+                </div>
+            `;
+        } catch (error) {
+            container.innerHTML = `
+                <div class="p-6">
+                    <h2 class="text-2xl font-bold text-startup-dark dark:text-white mb-6">Connections</h2>
+                    <div class="text-red-500">Failed to load connections: ${error.message}</div>
+                </div>
+            `;
+        }
+    },
+
+    /**
+     * Load documents tab content
+     */
+    loadDocumentsTabContent: async function() {
+        const container = document.getElementById('documents-tab');
+        if (!container) return;
+
+        container.innerHTML = `
+            <div class="p-6">
+                <h2 class="text-2xl font-bold text-startup-dark dark:text-white mb-6">Documents</h2>
+                <div class="py-4 text-center">
+                    <div class="spinner mx-auto mb-4"></div>
+                    <p class="text-gray-600 dark:text-gray-300">Loading documents<span class="loading-dots"></span></p>
+                </div>
+            </div>
+        `;
+
+        try {
+            const documents = await API.getDocuments();
+            // Render documents content
+            // TODO: Implement documents UI
+            container.innerHTML = `
+                <div class="p-6">
+                    <h2 class="text-2xl font-bold text-startup-dark dark:text-white mb-6">Documents</h2>
+                    <p class="text-gray-600 dark:text-gray-300">Coming soon...</p>
+                </div>
+            `;
+        } catch (error) {
+            container.innerHTML = `
+                <div class="p-6">
+                    <h2 class="text-2xl font-bold text-startup-dark dark:text-white mb-6">Documents</h2>
+                    <div class="text-red-500">Failed to load documents: ${error.message}</div>
+                </div>
+            `;
+        }
+    },
+
+    /**
+     * Load portfolio tab content
+     */
+    loadPortfolioTabContent: async function() {
+        const container = document.getElementById('portfolio-tab');
+        if (!container) return;
+
+        container.innerHTML = `
+            <div class="p-6">
+                <h2 class="text-2xl font-bold text-startup-dark dark:text-white mb-6">Portfolio</h2>
+                <div class="py-4 text-center">
+                    <div class="spinner mx-auto mb-4"></div>
+                    <p class="text-gray-600 dark:text-gray-300">Loading portfolio<span class="loading-dots"></span></p>
+                </div>
+            </div>
+        `;
+
+        try {
+            const portfolio = await API.getPortfolio();
+            // Render portfolio content
+            // TODO: Implement portfolio UI
+            container.innerHTML = `
+                <div class="p-6">
+                    <h2 class="text-2xl font-bold text-startup-dark dark:text-white mb-6">Portfolio</h2>
+                    <p class="text-gray-600 dark:text-gray-300">Coming soon...</p>
+                </div>
+            `;
+        } catch (error) {
+            container.innerHTML = `
+                <div class="p-6">
+                    <h2 class="text-2xl font-bold text-startup-dark dark:text-white mb-6">Portfolio</h2>
+                    <div class="text-red-500">Failed to load portfolio: ${error.message}</div>
+                </div>
+            `;
+        }
+    },
+
+    /**
+     * Load analytics tab content
+     */
+    loadAnalyticsTabContent: async function() {
+        const container = document.getElementById('analytics-tab');
+        if (!container) return;
+
+        container.innerHTML = `
+            <div class="p-6">
+                <h2 class="text-2xl font-bold text-startup-dark dark:text-white mb-6">Analytics</h2>
+                <div class="py-4 text-center">
+                    <div class="spinner mx-auto mb-4"></div>
+                    <p class="text-gray-600 dark:text-gray-300">Loading analytics<span class="loading-dots"></span></p>
+                </div>
+            </div>
+        `;
+
+        try {
+            const analytics = await API.getAnalytics();
+            // Render analytics content
+            // TODO: Implement analytics UI
+            container.innerHTML = `
+                <div class="p-6">
+                    <h2 class="text-2xl font-bold text-startup-dark dark:text-white mb-6">Analytics</h2>
+                    <p class="text-gray-600 dark:text-gray-300">Coming soon...</p>
+                </div>
+            `;
+        } catch (error) {
+            container.innerHTML = `
+                <div class="p-6">
+                    <h2 class="text-2xl font-bold text-startup-dark dark:text-white mb-6">Analytics</h2>
+                    <div class="text-red-500">Failed to load analytics: ${error.message}</div>
+                </div>
+            `;
+        }
+    },
 
     /**
      * Set up startup dashboard event listeners

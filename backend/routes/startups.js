@@ -5,7 +5,7 @@ const { protect, authorize } = require('../middleware/auth.js');
 
 // Public routes
 router.get('/', startupController.getStartups);
-router.get('/:id', startupController.getStartup);
+router.get('/:startupId', startupController.getStartup);
 
 // Protected routes
 router.get('/user/:userId', protect, startupController.getStartupByUserId);

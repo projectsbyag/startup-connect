@@ -5,7 +5,7 @@ const { protect, authorize } = require('../middleware/auth.js');
 
 // Public routes
 router.get('/', investorController.getInvestors);
-router.get('/:id', investorController.getInvestor);
+router.get('/:investorId', investorController.getInvestor);
 
 // Protected routes
 router.get('/user/:userId', protect, investorController.getInvestorByUserId);

@@ -858,7 +858,7 @@ const ProfilePage = {
                     btnText.textContent = 'Save Changes';
                     btnSpinner.classList.add('hidden');
                     submitBtn.disabled = false;
-                    
+                    location.reload();
                 } catch (error) {
                     // Show error
                     app.showToast(error.message || 'Failed to update profile', 'error');
@@ -1018,3 +1018,5 @@ const ProfilePage = {
         }
     }
 };
+
+export default ProfilePage;

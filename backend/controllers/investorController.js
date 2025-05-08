@@ -72,7 +72,7 @@ exports.getInvestors = async (req, res, next) => {
 // @access  Public
 exports.getInvestor = async (req, res, next) => {
     try {
-        const investor = await Investor.findById(req.params.id);
+        const investor = await Investor.findById(req.params.investorId);
         
         if (!investor) {
             return res.status(404).json({
@@ -83,14 +83,19 @@ exports.getInvestor = async (req, res, next) => {
         
         res.status(200).json({
             success: true,
-            data: investor
+            investor: investor // Changed from 'data' to 'investor'
         });
         
     } catch (error) {
+        if (error.name === 'CastError') {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid investor ID format'
+            });
+        }
         next(error);
     }
 };
-
 // @desc    Get investor by user ID
 // @route   GET /api/investors/user/:userId
 // @access  Private

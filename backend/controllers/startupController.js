@@ -72,7 +72,7 @@ exports.getStartups = async (req, res, next) => {
 // @access  Public
 exports.getStartup = async (req, res, next) => {
     try {
-        const startup = await Startup.findById(req.params.id);
+        const startup = await Startup.findById(req.params.startupId);
         
         if (!startup) {
             return res.status(404).json({
@@ -81,16 +81,23 @@ exports.getStartup = async (req, res, next) => {
             });
         }
         
+        // Changed to match frontend expectation of 'startup' property
         res.status(200).json({
             success: true,
-            data: startup
+            startup: startup  // Changed from 'data' to 'startup'
         });
         
     } catch (error) {
+        // Add better error handling
+        if (error.name === 'CastError') {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid startup ID format'
+            });
+        }
         next(error);
     }
 };
-
 // @desc    Get startup by user ID
 // @route   GET /api/startups/user/:userId
 // @access  Private

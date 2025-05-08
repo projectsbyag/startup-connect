@@ -439,7 +439,13 @@ const InvestorsPage = {
         
         try {
             // Fetch investor details
-            const investor = await API.getInvestor(investorId);
+            const response = await API.getInvestor(investorId);
+        
+            if (!response.success || !response.investor) {
+                throw new Error('Failed to load investor details');
+            }
+            
+            const investor = response.investor;
             
             // Render investor details
             contentContainer.innerHTML = `

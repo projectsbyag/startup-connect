@@ -435,7 +435,11 @@ const StartupsPage = {
         
         try {
             // Fetch startup details
-            const startup = await API.getStartup(startupId);
+            const response = await API.getStartup(startupId);
+            if (!response || !response.startup) {
+                throw new Error('Failed to load startup details');
+            }
+            const startup = response.startup;
             
             // Render startup details
             contentContainer.innerHTML = `

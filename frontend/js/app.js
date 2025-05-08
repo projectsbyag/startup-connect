@@ -1,3 +1,5 @@
+import ProfilePage from './profile.js';
+import SettingsPage from './settings.js';
 /**
  * Main Application
  */
@@ -333,7 +335,10 @@ class App {
             document.getElementById('mobile-user-menu')?.classList.remove('hidden');
             
             // Update user initials and info
-            const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase();
+            const initials = user.name ? 
+            user.name.split(' ').map(n => n[0]).join('').toUpperCase() : 
+            user.email?.charAt(0).toUpperCase() || 'U';
+            
             document.getElementById('user-initials').textContent = initials;
             document.getElementById('mobile-user-initials').textContent = initials;
             document.getElementById('mobile-user-name').textContent = user.name;
