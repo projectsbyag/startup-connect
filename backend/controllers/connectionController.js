@@ -224,7 +224,11 @@ exports.getConnections = async (req, res, next) => {
             
             return {
                 _id: connection._id,
-                user: connectedUser,
+                user: {
+                    _id: connectedUser._id,
+                    name: connectedUser.name,
+                    userType: connectedUser.userType
+                },
                 createdAt: connection.createdAt,
                 updatedAt: connection.updatedAt
             };

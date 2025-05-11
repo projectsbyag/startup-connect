@@ -215,6 +215,7 @@ class App {
         try {
             await Auth.login({ email, password });
             
+            document.dispatchEvent(new Event('user:login'));
             // Close modal
             document.getElementById('login-modal').classList.add('hidden');
             

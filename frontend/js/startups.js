@@ -187,6 +187,7 @@ const StartupsPage = {
      * @param {App} app - Main application instance
      */
     setupEventListeners: function(app) {
+        this.app = app;
         // Load startups when page is first displayed
         this.loadStartups();
         
@@ -591,33 +592,58 @@ const StartupsPage = {
         const connectBtn = document.getElementById('connect-with-startup-btn');
         if (connectBtn) {
             connectBtn.addEventListener('click', async (e) => {
+                const originalText = connectBtn.innerHTML; // Move inside event handler
+                
                 try {
+                    // Check if already connected or pending
+                    if (connectBtn.classList.contains('connected') || 
+                        connectBtn.classList.contains('pending')) {
+                        return;
+                    }
+    
                     // Show loading state
-                    const originalText = connectBtn.innerHTML;
                     connectBtn.innerHTML = `
                         <span class="spinner inline-block mr-2"></span>
                         Connecting...
                     `;
                     connectBtn.disabled = true;
-                    
-                    // Send connection request
-                    await API.sendConnectionRequest(startup.userId);
-                    
-                    // Show success message
-                    app.showToast('Connection request sent!', 'success');
-                    
-                    // Update button
-                    connectBtn.innerHTML = `<i class="fas fa-check mr-2"></i> Request Sent`;
-                    connectBtn.classList.remove('bg-startup-primary');
-                    connectBtn.classList.add('bg-green-500');
-                    connectBtn.disabled = true;
+                    try {
+                        // Send connection request
+                        await API.sendConnectionRequest(startup.userId);
+                        
+                        // Show success message
+                        this.app.showToast('Connection request sent!', 'success');
+                        
+                        // Update button
+                        connectBtn.innerHTML = `<i class="fas fa-check mr-2"></i> Request Sent`;
+                        connectBtn.classList.remove('bg-startup-primary');
+                        connectBtn.classList.add('bg-green-500', 'pending');
+                        connectBtn.disabled = true;
+                    } catch (error) {
+                        // Check if already connected
+                        if (error.message.includes('Connection request already exists') || 
+                            error.message.includes('users are already connected')) {
+                            // Update button to show existing connection
+                            connectBtn.innerHTML = `<i class="fas fa-check mr-2"></i> Connected`;
+                            connectBtn.classList.remove('bg-startup-primary');
+                            connectBtn.classList.add('bg-green-500', 'connected');
+                            connectBtn.disabled = true;
+                            this.app.showToast('Already connected with this startup', 'info');
+                        } else {
+                            // Restore button for other errors
+                            connectBtn.innerHTML = originalText;
+                            connectBtn.disabled = false;
+                            this.app.showToast(error.message || 'Failed to send connection request', 'error');
+                            console.error('Error sending connection request:', error);
+                        }
+                    }
                 } catch (error) {
                     // Restore button
                     connectBtn.innerHTML = originalText;
                     connectBtn.disabled = false;
                     
                     // Show error
-                    app.showToast(error.message || 'Failed to send connection request', 'error');
+                    this.app.showToast(error.message || 'Failed to send connection request', 'error');
                     console.error('Error sending connection request:', error);
                 }
             });

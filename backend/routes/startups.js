@@ -8,7 +8,10 @@ router.get('/', startupController.getStartups);
 router.get('/:startupId', startupController.getStartup);
 
 // Protected routes
+router.get('/user/documents', protect, startupController.getStartupDocuments);
+router.get('/user/analytics', protect, startupController.getStartupAnalytics);
 router.get('/user/:userId', protect, startupController.getStartupByUserId);
+
 router.post('/', protect, authorize('startup'), startupController.createStartup);
 router.put('/:id', protect, startupController.updateStartup);
 router.delete('/:id', protect, startupController.deleteStartup);
@@ -17,6 +20,6 @@ router.delete('/:id', protect, startupController.deleteStartup);
 router.post('/documents', protect, authorize('startup'), startupController.uploadDocument);
 
 // Matches
-router.get('/:id/matches', protect, startupController.getStartupMatches);
-
+//router.get('/:id/matches', protect, startupController.getStartupMatches);
+router.get('/:id/matches', protect, startupController.getInvestorMatches);
 module.exports = router;

@@ -6,6 +6,7 @@ const DashboardPage = {
      * Render dashboard page
      * @returns {string} - HTML content
      */
+    app: null,
     render: function() {
         // Check if user is authenticated
         if (!Auth.isUserAuthenticated()) {
@@ -741,10 +742,6 @@ const DashboardPage = {
                             <i class="fas fa-briefcase w-5 mr-2"></i>
                             <span>Portfolio</span>
                         </a>
-                        <a href="#" class="dashboard-nav flex items-center px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800" data-tab="analytics">
-                            <i class="fas fa-chart-line w-5 mr-2"></i>
-                            <span>Analytics</span>
-                        </a>
                     </nav>
                 </div>
                 
@@ -982,17 +979,31 @@ const DashboardPage = {
             });
         }
         
-        // If user is authenticated, load dashboard content
-        if (Auth.isUserAuthenticated()) {
-            this.loadDashboardContent(app);
-        }
-    },
+        // Listen for successful login/signup (you may already have this elsewhere)
+    document.addEventListener('user:login', () => {
+        // Hide login/signup buttons
+        loginBtn?.classList.add('hidden');
+        signupBtn?.classList.add('hidden');
+    });
+    document.addEventListener('user:signup', () => {
+        loginBtn?.classList.add('hidden');
+        signupBtn?.classList.add('hidden');
+    });
+
+    // If user is authenticated, load dashboard content
+    if (Auth.isUserAuthenticated()) {
+        loginBtn?.classList.add('hidden');
+        signupBtn?.classList.add('hidden');
+        this.loadDashboardContent(app);
+    }
+},
     
     /**
      * Load dashboard content based on user type
      * @param {App} app - Main application instance
      */
     loadDashboardContent: async function(app) {
+        this.app = app;
         // Show loading state
         document.getElementById('dashboard-loading')?.classList.remove('hidden');
         document.getElementById('dashboard-error')?.classList.add('hidden');
@@ -1014,7 +1025,7 @@ const DashboardPage = {
                     document.getElementById('dashboard-content').classList.remove('hidden');
                     
                     // Setup dashboard tab navigation
-                    this.setupDashboardTabs();
+                    this.setupDashboardTabs(app);
                     
                     // Setup dashboard-specific event listeners
                     this.setupStartupDashboardEventListeners(app, startupProfile);
@@ -1036,7 +1047,7 @@ const DashboardPage = {
                     document.getElementById('dashboard-content').classList.remove('hidden');
                     
                     // Setup dashboard tab navigation
-                    this.setupDashboardTabs();
+                    this.setupDashboardTabs(app);
                     
                     // Setup dashboard-specific event listeners
                     this.setupInvestorDashboardEventListeners(app, investorProfile);
@@ -1256,7 +1267,8 @@ const DashboardPage = {
     /**
      * Setup dashboard tabs navigation
      */
-    setupDashboardTabs: function() {
+    setupDashboardTabs: function(app) {
+        this.app = app;
         const navLinks = document.querySelectorAll('.dashboard-nav');
         const tabContents = document.querySelectorAll('.dashboard-tab');
         
@@ -1286,7 +1298,7 @@ const DashboardPage = {
                 document.getElementById(`${tabId}-tab`)?.classList.remove('hidden');
                 
                 // Load tab content if needed
-                this.loadTabContent(tabId);
+                this.loadTabContent(tabId, this.app);
             });
         });
     },
@@ -1295,17 +1307,20 @@ const DashboardPage = {
      * Load tab content as needed
      * @param {string} tabId - Tab ID
      */
-    loadTabContent: function(tabId) {
+    loadTabContent: function(tabId, app) {
+        this.app = app;
         // Based on tab ID, load specific content
         switch (tabId) {
             case 'profile':
                 // Load profile tab content
-                this.loadProfileTabContent();
+                this.loadProfileTabContent(this.app);
                 break;
             case 'matches':
+                this.loadMatchesTabContent();
+                break;
             case 'startups':
                 // Load matches/opportunities tab content
-                this.loadMatchesTabContent();
+                this.loadStartupOpportunitieTabContent();
                 break;
             case 'messages':
                 // Load messages tab content
@@ -1333,7 +1348,8 @@ const DashboardPage = {
     /**
      * Load profile tab content
      */
-    loadProfileTabContent: function() {
+    loadProfileTabContent: function(app) {
+        this.app = app;
         const tabContent = document.getElementById('profile-tab');
         
         if (!tabContent) return;
@@ -1353,9 +1369,9 @@ const DashboardPage = {
         const user = Auth.getCurrentUser();
         
         if (user.userType === 'startup') {
-            this.loadStartupProfileTab(tabContent);
+            this.loadStartupProfileTab(tabContent, this.app);
         } else if (user.userType === 'investor') {
-            this.loadInvestorProfileTab(tabContent);
+            this.loadInvestorProfileTab(tabContent, this.app);
         }
     },
     
@@ -1363,7 +1379,8 @@ const DashboardPage = {
      * Load startup profile tab content
      * @param {HTMLElement} container - Tab content container
      */
-    loadStartupProfileTab: async function(container) {
+    loadStartupProfileTab: async function(container, app) {
+        this.app = app;
         try {
             // Load startup profile
             const user = Auth.getCurrentUser();
@@ -1583,7 +1600,7 @@ const DashboardPage = {
                         });
                         
                         // Show success message
-                        app.showToast('Profile updated successfully!', 'success');
+                        this.app.showToast('Profile updated successfully!', 'success');
                         
                         // Reset button state
                         btnText.textContent = 'Save Changes';
@@ -1592,7 +1609,7 @@ const DashboardPage = {
                         
                     } catch (error) {
                         // Show error
-                        app.showToast(error.message || 'Failed to update profile', 'error');
+                        this.app.showToast(error.message || 'Failed to update profile', 'error');
                         console.error('Error updating startup profile:', error);
                         
                         // Reset button state
@@ -1625,7 +1642,7 @@ const DashboardPage = {
             
             // Add retry button listener
             document.getElementById('retry-profile-btn')?.addEventListener('click', () => {
-                this.loadProfileTabContent();
+                this.loadProfileTabContent( this.app);
             });
             
             console.error('Error loading startup profile tab:', error);
@@ -1636,7 +1653,8 @@ const DashboardPage = {
      * Load investor profile tab content
      * @param {HTMLElement} container - Tab content container
      */
-    loadInvestorProfileTab: async function(container) {
+    loadInvestorProfileTab: async function(container, app) {
+        this.app = app;
         // Implementation similar to loadStartupProfileTab but for investor profiles
         try {
             // Load investor profile
@@ -2013,89 +2031,377 @@ const DashboardPage = {
     },
     
     loadMatchesTabContent: async function() {
-        const container = document.getElementById('matches-tab-content');
-        if (!container) return;
+    const container = document.getElementById('matches-tab');
+    if (!container) return;
 
-        // Show loading state
+    try {
+        // Get current user
+        const user = Auth.getCurrentUser();
+        
+        // Show initial loading state
         container.innerHTML = `
-            <div class="py-20 text-center">
-                <div class="spinner mx-auto mb-4"></div>
-                <p class="text-gray-600 dark:text-gray-300">Loading matches<span class="loading-dots"></span></p>
+            <div class="p-6">
+                <h2 class="text-2xl font-bold text-startup-dark dark:text-white mb-6">Investor Matches</h2>
+                <div id="matches-loading" class="text-center py-8">
+                    <div class="spinner mx-auto mb-4"></div>
+                    <p class="text-gray-600 dark:text-gray-300">Finding your investor matches<span class="loading-dots"></span></p>
+                </div>
             </div>
         `;
 
-        try {
-            // Get matches from API
-            const matches = await API.getMatches();
+        // Get startup profile
+        const response = await API.getStartups();
+        const startup = response.startup;
 
-            if (matches.length === 0) {
-                // Show empty state
-                container.innerHTML = `
-                    <div class="py-20 text-center">
+        if (!startup) {
+            container.innerHTML = `
+                <div class="p-6">
+                    <div class="text-center py-8">
                         <div class="text-gray-400 text-5xl mb-4">
-                            <i class="fas fa-handshake"></i>
+                            <i class="fas fa-user-cog"></i>
                         </div>
-                        <h3 class="text-xl font-bold text-startup-dark dark:text-white mb-2">No matches found</h3>
-                        <p class="text-gray-600 dark:text-gray-300">Update your preferences to find matching startups.</p>
+                        <h3 class="text-xl font-bold text-startup-dark dark:text-white mb-2">Complete Your Profile</h3>
+                        <p class="text-gray-600 dark:text-gray-300 mb-6">
+                            Please complete your startup profile to see matched investors
+                        </p>
+                        <button id="complete-profile-btn" class="px-4 py-2 bg-startup-primary text-white rounded-md hover:bg-opacity-90">
+                            Complete Profile
+                        </button>
                     </div>
-                `;
-                return;
+                </div>
+            `;
+            
+            document.getElementById('complete-profile-btn')?.addEventListener('click', () => {
+                const profileTab = document.querySelector('[data-tab="profile"]');
+                if (profileTab) profileTab.click();
+            });
+            return;
+        }
+
+        // Get matches
+        const matchesResponse = await API.get(`/startups/${startup._id}/matches`);
+        const matches = matchesResponse.data;
+
+        if (matches && matches.length > 0) {
+            container.innerHTML = `
+                <div class="p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-2xl font-bold text-startup-dark dark:text-white">Investor Matches</h2>
+                        <div class="flex items-center space-x-4">
+                            <div class="relative">
+                                <select id="matches-sort" class="appearance-none bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md py-2 px-4 pr-8 text-sm focus:outline-none focus:ring-startup-primary focus:border-startup-primary">
+                                    <option value="match-high">Match % (High to Low)</option>
+                                    <option value="match-low">Match % (Low to High)</option>
+                                    <option value="portfolio">Portfolio Size</option>
+                                </select>
+                                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                                    <i class="fas fa-chevron-down"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="matches-grid">
+                        ${matches.map(match => match.investor ? `
+                            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+                                <div class="p-6">
+                                    <div class="flex items-center justify-between mb-4">
+                                        <div class="flex items-center">
+                                            <div class="h-12 w-12 rounded-full bg-startup-primary text-white flex items-center justify-center text-xl font-bold">
+                                                ${match.investor?.firm ? match.investor.firm.charAt(0).toUpperCase() : match.investor?.name?.charAt(0)?.toUpperCase() || 'I'}
+                                            </div>
+                                            <div class="ml-4">
+                                                <h3 class="text-lg font-semibold text-startup-dark dark:text-white">
+                                                    ${match.investor.firm || match.investor.name}
+                                                </h3>
+                                                <p class="text-sm text-gray-500 dark:text-gray-400">
+                                                    ${match.investor.position} • ${match.investor.location}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div class="text-right">
+                                            <div class="text-2xl font-bold text-startup-primary">
+                                                ${match.matchPercentage}%
+                                            </div>
+                                            <div class="text-sm text-gray-500">Match</div>
+                                        </div>
+                                    </div>
+                                    <p class="text-gray-600 dark:text-gray-300 text-sm mb-4">
+                                        ${match.investor.bio || 'No bio available'}
+                                    </p>
+                                    <div class="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400 mb-4">
+                                        <span>
+                                            <i class="fas fa-briefcase mr-1"></i>
+                                            Portfolio: ${match.investor.portfolioSize} companies
+                                        </span>
+                                        <span>
+                                            <i class="fas fa-layer-group mr-1"></i>
+                                            ${Array.isArray(match.investor.stage) ? match.investor.stage.join(', ') : ''}
+                                        </span>
+                                    </div>
+                                    <div class="space-y-2">
+                                        ${Array.isArray(match.matchDetails) ? match.matchDetails.map(detail => `
+                                            <div class="flex items-center justify-between text-xs">
+                                                <span class="text-gray-600 dark:text-gray-400">${detail.type}</span>
+                                                <span class="text-startup-primary font-medium">+${detail.score}%</span>
+                                            </div>
+                                        `).join('') : ''}
+                                    </div>
+                                    <div class="mt-4 flex space-x-3">
+                                        <button class="flex-1 px-4 py-2 bg-startup-primary text-white rounded-md hover:bg-opacity-90 connect-btn"
+                                                data-investor-id="${match.investor._id}">
+                                            Connect
+                                        </button>
+                                        <button class="flex-1 px-4 py-2 border border-startup-primary text-startup-primary rounded-md hover:bg-startup-primary hover:text-white message-btn"
+                                                data-investor-id="${match.investor._id}"
+                                                data-investor-name="${match.investor.name}">
+                                            Message
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        ` : `
+                            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+                                <div class="p-6 text-center text-gray-500 dark:text-gray-400">
+                                    <i class="fas fa-user-slash text-3xl mb-2"></i>
+                                    <div>Investor data unavailable</div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+
+            // Setup sorting functionality
+            const sortSelect = document.getElementById('matches-sort');
+            if (sortSelect) {
+                sortSelect.addEventListener('change', (e) => {
+                    const sortedMatches = [...matches].sort((a, b) => {
+                        switch (e.target.value) {
+                            case 'match-high':
+                                return b.matchPercentage - a.matchPercentage;
+                            case 'match-low':
+                                return a.matchPercentage - b.matchPercentage;
+                            case 'portfolio':
+                                return b.investor.portfolioSize - a.investor.portfolioSize;
+                            default:
+                                return 0;
+                        }
+                    });
+
+                    const matchesGrid = document.getElementById('matches-grid');
+                    if (matchesGrid) {
+                        matchesGrid.innerHTML = sortedMatches.map(match => `
+                            // Same card template as above
+                        `).join('');
+                        
+                        // Reattach event listeners after sorting
+                        this.setupMatchButtonListeners();
+                    }
+                });
             }
 
-            // Render matches
+            // Setup button event listeners
+            this.setupMatchButtonListeners();
+
+        } else {
             container.innerHTML = `
-                <div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-                    ${matches.map(match => `
-                        <div class="startup-card bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden" data-id="${match._id}">
-                            <div class="p-6">
-                                <div class="flex justify-between items-start">
-                                    <div>
-                                        <h3 class="text-xl font-bold text-startup-dark dark:text-white">${match.name}</h3>
-                                        <p class="text-gray-500 dark:text-gray-400">${match.location}</p>
+                <div class="p-6">
+                    <div class="text-center py-8">
+                        <div class="text-gray-400 text-5xl mb-4">
+                            <i class="fas fa-search"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-startup-dark dark:text-white mb-2">No matches found</h3>
+                        <p class="text-gray-600 dark:text-gray-300">
+                            Try updating your startup profile to match with more investors
+                        </p>
+                        <button id="update-profile-btn" class="mt-4 px-4 py-2 bg-startup-primary text-white rounded-md hover:bg-opacity-90">
+                            Update Profile
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            // Add event listener for update profile button
+            document.getElementById('update-profile-btn')?.addEventListener('click', () => {
+                const profileTab = document.querySelector('[data-tab="profile"]');
+                if (profileTab) profileTab.click();
+            });
+        }
+
+    } catch (error) {
+        console.error('Error loading matches:', error);
+        container.innerHTML = `
+            <div class="p-6">
+                <div class="text-center py-8">
+                    <div class="text-red-500 text-5xl mb-4">
+                        <i class="fas fa-exclamation-circle"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-startup-dark dark:text-white mb-2">Error loading matches</h3>
+                    <p class="text-gray-600 dark:text-gray-300">${error.message || 'Failed to load matches'}</p>
+                    <button id="retry-matches-btn" class="mt-4 px-4 py-2 bg-startup-primary text-white rounded-md hover:bg-opacity-90">
+                        Try Again
+                    </button>
+                </div>
+            </div>
+        `;
+
+        // Add retry button listener
+        document.getElementById('retry-matches-btn')?.addEventListener('click', () => {
+            this.loadMatchesTabContent();
+        });
+    }
+},
+loadStartupOpportunitieTabContent: async function() {
+    const container = document.getElementById('startups-tab');
+    if (!container) return;
+
+    // Show loading state
+    container.innerHTML = `
+        <div class="p-6">
+            <h2 class="text-2xl font-bold text-startup-dark dark:text-white mb-6">Startup Opportunities</h2>
+            <div class="py-4 text-center">
+                <div class="spinner mx-auto mb-4"></div>
+                <p class="text-gray-600 dark:text-gray-300">Loading startup opportunities<span class="loading-dots"></span></p>
+            </div>
+        </div>
+    `;
+
+    try {
+        // Fetch matching startups from API
+        const response = await API.getStartupOpportunities();
+        const startups = response.startups || [];
+
+        if (startups.length === 0) {
+            container.innerHTML = `
+                <div class="p-6">
+                    <h2 class="text-2xl font-bold text-startup-dark dark:text-white mb-6">Startup Opportunities</h2>
+                    <p class="text-gray-600 dark:text-gray-300">No suitable startups found matching your investment criteria.</p>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = `
+            <div class="p-6">
+                <h2 class="text-2xl font-bold text-startup-dark dark:text-white mb-6">Startup Opportunities</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    ${startups.map(startup => `
+                        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden flex flex-col">
+                            <div class="p-6 flex-1 flex flex-col">
+                                <div class="flex items-center justify-between mb-4">
+                                    <div class="flex items-center">
+                                        <div class="h-12 w-12 rounded-full bg-startup-primary text-white flex items-center justify-center text-xl font-bold">
+                                            ${startup.name?.charAt(0).toUpperCase() || 'S'}
+                                        </div>
+                                        <div class="ml-4">
+                                            <h3 class="text-lg font-semibold text-startup-dark dark:text-white">${startup.name}</h3>
+                                            <p class="text-sm text-gray-500 dark:text-gray-400">${startup.industry}</p>
+                                        </div>
                                     </div>
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-startup-primary">
-                                        ${match.industry}
-                                    </span>
+                                    <div class="text-right">
+                                        <div class="text-2xl font-bold text-startup-primary">${startup.matchScore ?? '-'}/10</div>
+                                        <div class="text-xs text-gray-500">Match Score</div>
+                                    </div>
                                 </div>
-                                <p class="mt-4 text-gray-600 dark:text-gray-300">${match.description}</p>
-                                <div class="mt-6">
-                                    <button class="view-startup-btn px-4 py-2 bg-startup-primary text-white rounded-md hover:bg-opacity-90 w-full" data-id="${match._id}">
-                                        View Details
+                                <p class="text-gray-600 dark:text-gray-300 text-sm mb-4">${startup.description || 'No description available.'}</p>
+                                <ul class="text-xs text-gray-500 dark:text-gray-400 space-y-1 mb-2">
+                                    ${startup.fundingStage ? `<li><i class="fas fa-layer-group mr-1"></i> Stage: ${startup.fundingStage}</li>` : ''}
+                                    ${startup.fundingGoal ? `<li><i class="fas fa-dollar-sign mr-1"></i> Funding Goal: $${startup.fundingGoal.toLocaleString()}</li>` : ''}
+                                    ${startup.location ? `<li><i class="fas fa-map-marker-alt mr-1"></i> Location: ${startup.location}</li>` : ''}
+                                    ${startup.website ? `<li><i class="fas fa-globe mr-1"></i> <a href="${startup.website}" target="_blank" class="text-startup-primary hover:underline">Website</a></li>` : ''}
+                                </ul>
+                                <div class="flex-1"></div>
+                                <div class="mt-4 flex space-x-2">
+                                    <button class="flex-1 px-4 py-2 bg-startup-primary text-white rounded-md hover:bg-opacity-90 startup-connect-btn" data-id="${startup._id}">
+                                        Connect
+                                    </button>
+                                    <button class="flex-1 px-4 py-2 border border-startup-primary text-startup-primary rounded-md hover:bg-startup-primary hover:text-white startup-details-btn" data-id="${startup._id}">
+                                        Details
                                     </button>
                                 </div>
                             </div>
                         </div>
                     `).join('')}
                 </div>
-            `;
+            </div>
+        `;
 
-            // Attach event listeners
-            this.attachStartupCardListeners();
-
-        } catch (error) {
-            // Show error state
-            container.innerHTML = `
-                <div class="py-20 text-center">
-                    <div class="text-red-500 text-5xl mb-4">
-                        <i class="fas fa-exclamation-circle"></i>
-                    </div>
-                    <h3 class="text-xl font-bold text-startup-dark dark:text-white mb-2">Failed to load matches</h3>
-                    <p class="text-gray-600 dark:text-gray-300 mb-6">${error.message || 'An error occurred while fetching matches.'}</p>
-                    <button id="retry-matches-btn" class="px-4 py-2 bg-startup-primary text-white rounded-md hover:bg-opacity-90">
-                        Try Again
-                    </button>
-                </div>
-            `;
-
-            // Add retry button listener
-            document.getElementById('retry-matches-btn')?.addEventListener('click', () => {
-                this.loadMatchesTabContent();
+        // Setup connect/details button listeners
+        document.querySelectorAll('.startup-connect-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                const startupId = btn.dataset.id;
+                btn.disabled = true;
+                btn.innerHTML = `<span class="spinner inline-block mr-1"></span>Connecting...`;
+                try {
+                    await API.sendConnectionRequest(startupId);
+                    btn.innerHTML = `<i class="fas fa-check mr-1"></i>Sent`;
+                    btn.classList.remove('bg-startup-primary');
+                    btn.classList.add('bg-green-500');
+                    btn.disabled = true;
+                    this.app?.showToast('Connection request sent!', 'success');
+                } catch (error) {
+                    btn.disabled = false;
+                    btn.innerHTML = 'Connect';
+                    this.app?.showToast(error.message || 'Failed to connect', 'error');
+                }
             });
+        });
+        document.querySelectorAll('.startup-details-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const startupId = btn.dataset.id;
+                // Implement your details modal or navigation here
+                StartupsPage.showStartupDetails(startupId);
+            });
+        });
 
-            console.error('Error loading matches:', error);
-        }
-    },
-    // ...existing code...
+    } catch (error) {
+        container.innerHTML = `
+            <div class="p-6">
+                <h2 class="text-2xl font-bold text-startup-dark dark:text-white mb-6">Startup Opportunities</h2>
+                <div class="text-red-500">Failed to load startup opportunities: ${error.message}</div>
+            </div>
+        `;
+    }
+},
+
+setupMatchButtonListeners: function() {
+    // Connect buttons
+    document.querySelectorAll('.connect-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            const investorId = btn.dataset.investorId;
+            try {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Connecting...';
+                
+                await API.sendConnectionRequest(investorId);
+                
+                btn.innerHTML = '<i class="fas fa-check mr-1"></i> Connected';
+                btn.classList.remove('bg-startup-primary');
+                btn.classList.add('bg-green-500');
+                
+                this.app?.showToast('Connection request sent!', 'success');
+            } catch (error) {
+                btn.disabled = false;
+                btn.innerHTML = 'Connect';
+                this.app?.showToast(error.message || 'Failed to connect', 'error');
+            }
+        });
+    });
+
+    // Message buttons
+    document.querySelectorAll('.message-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            const investorId = btn.dataset.investorId;
+            const investorName = btn.dataset.investorName;
+            try {
+                await this.startChat(investorId, investorName, this.app);
+            } catch (error) {
+                this.app?.showToast(error.message || 'Failed to start chat', 'error');
+            }
+        });
+    });
+},
 
     /**
      * Load messages tab content
@@ -2326,150 +2632,841 @@ const DashboardPage = {
     /**
      * Load connections tab content
      */
-    loadConnectionsTabContent: async function() {
-        const container = document.getElementById('connections-tab');
-        if (!container) return;
+    /**
+ * Load connections tab content
+ */
+/**
+ * Load connections tab content
+ */
+loadConnectionsTabContent: async function() {
+     this.app = this.app || window.app; // Ensure app is defined
+    const container = document.getElementById('connections-tab');
+    if (!container) return;
 
+    try {
+        // Log API responses for debugging
+        const [connections, requestsResponse] = await Promise.all([
+            API.getConnections().then(resp => {
+            console.log('Connections:', resp);
+            return resp || { data: [] };
+            }),
+            API.getConnectionRequests().then(resp => {
+            console.log('Connection Requests:', resp); 
+            // Extract request details including user names
+            return (resp.data || []).map(request => ({
+                ...request,
+                user: request.requester || request.recipient || 'Unknown'
+            }));
+            })
+        ]);
+
+        // Get current user ID
+        const currentUserId = Auth.getCurrentUser()._id;
+
+        // Separate incoming and outgoing requests
+        const requests = requestsResponse;
+        const incomingRequests = requests.filter(req => req.recipient === currentUserId);
+        const outgoingRequests = requests.filter(req => req.sender === currentUserId);
+
+        // Update the markup
         container.innerHTML = `
             <div class="p-6">
-                <h2 class="text-2xl font-bold text-startup-dark dark:text-white mb-6">Connections</h2>
-                <div class="py-4 text-center">
-                    <div class="spinner mx-auto mb-4"></div>
-                    <p class="text-gray-600 dark:text-gray-300">Loading connections<span class="loading-dots"></span></p>
+                <!-- Tabs -->
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-startup-dark dark:text-white">Connections</h2>
+                    <div class="flex space-x-4">
+                        <button id="connections-tab-btn" class="px-4 py-2 text-startup-primary border-b-2 border-startup-primary">
+                            Connections (${connections.data?.length || 0})
+                        </button>
+                        <button id="requests-tab-btn" class="px-4 py-2 text-gray-500 border-b-2 border-transparent hover:text-startup-primary">
+                            Requests (${requests.length})
+                            ${requests.length > 0 ? `
+                                <span class="ml-2 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-startup-primary rounded-full">
+                                    ${requests.length}
+                                </span>
+                            ` : ''}
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Requests View -->
+                <div id="requests-view" class="space-y-6">
+                    ${requests.length > 0 ? `
+                        <!-- Incoming Requests -->
+                        ${incomingRequests.length > 0 ? `
+                            <div class="mb-8">
+                                <h3 class="text-lg font-semibold text-startup-dark dark:text-white mb-4">
+                                    Incoming Requests (${incomingRequests.length})
+                                </h3>
+                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                    ${incomingRequests.map(req => `
+                                        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                                            <div class="flex items-center justify-between mb-4">
+                                                <div class="flex items-center">
+                                                    <div class="h-12 w-12 rounded-full bg-startup-primary text-white flex items-center justify-center text-xl font-bold">
+                                                        ${req.user?.charAt(0).toUpperCase() || 'U'}
+                                                    </div>
+                                                    <div class="ml-4">
+                                                        <h3 class="text-lg font-semibold text-startup-dark dark:text-white">
+                                                            ${req.user || 'Unknown User'}
+                                                        </h3>
+                                                        <p class="text-xs text-gray-400 mt-1">
+                                                            Received ${new Date(req.createdAt).toLocaleDateString()}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="flex space-x-3">
+                                                <button class="flex-1 px-4 py-2 bg-startup-primary text-white rounded-md hover:bg-opacity-90 accept-request-btn"
+                                                        data-request-id="${req._id}">
+                                                    Accept
+                                                </button>
+                                                <button class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 reject-request-btn"
+                                                        data-request-id="${req._id}">
+                                                    Decline
+                                                </button>
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        ` : ''}
+
+                        <!-- Outgoing Requests -->
+                        ${outgoingRequests.length > 0 ? `
+                            <div>
+                                <h3 class="text-lg font-semibold text-startup-dark dark:text-white mb-4">
+                                    Sent Requests (${outgoingRequests.length})
+                                </h3>
+                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                    ${outgoingRequests.map(req => `
+                                        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                                            <div class="flex items-center justify-between mb-4">
+                                                <div class="flex items-center">
+                                                    <div class="h-12 w-12 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 flex items-center justify-center text-xl font-bold">
+                                                        ${req.user?.charAt(0).toUpperCase() || 'U'}
+                                                    </div>
+                                                    <div class="ml-4">
+                                                        <h3 class="text-lg font-semibold text-startup-dark dark:text-white">
+                                                            ${req.user || 'Unknown User'}
+                                                        </h3>
+                                                        <p class="text-xs text-gray-400 mt-1">
+                                                            Sent ${new Date(req.createdAt).toLocaleDateString()}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <button class="text-gray-400 hover:text-red-500 cancel-request-btn" 
+                                                        data-request-id="${req._id}"
+                                                        title="Cancel Request">
+                                                    <i class="fas fa-times"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        ` : ''}
+                    ` : `
+                        <div class="text-center py-8">
+                            <div class="text-gray-400 text-5xl mb-4">
+                                <i class="fas fa-user-plus"></i>
+                            </div>
+                            <h3 class="text-xl font-bold text-startup-dark dark:text-white mb-2">No pending requests</h3>
+                            <p class="text-gray-600 dark:text-gray-300">You don't have any connection requests</p>
+                        </div>
+                    `}
                 </div>
             </div>
         `;
 
-        try {
-            const connections = await API.getConnections();
-            // Render connections content
-            // TODO: Implement connections UI
+        // Setup event listeners
+        this.setupConnectionsEventListeners();
+
+    } catch (error) {
+        console.error('Error loading connections:', error);
+        container.innerHTML = `
+            <div class="p-6">
+                <h2 class="text-2xl font-bold text-startup-dark dark:text-white mb-6">Network</h2>
+                <div class="text-center py-8">
+                    <div class="text-red-500 text-5xl mb-4">
+                        <i class="fas fa-exclamation-circle"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-startup-dark dark:text-white mb-2">Error</h3>
+                    <p class="text-gray-600 dark:text-gray-300 mb-6">
+                        ${error.message || 'Failed to load connections'}
+                    </p>
+                    <button id="retry-connections-btn" class="px-4 py-2 bg-startup-primary text-white rounded-md hover:bg-opacity-90">
+                        Try Again
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+},
+
+/**
+ * Setup event listeners for connections tab
+ */
+setupConnectionsEventListeners: function() {
+    // Tab switching
+    this.app = this.app || window.app; // Ensure app is defined
+    const connectionsBtn = document.getElementById('connections-tab-btn');
+    const requestsBtn = document.getElementById('requests-tab-btn');
+    const requestsView = document.getElementById('requests-view');
+
+    if (connectionsBtn && requestsBtn && requestsView) {
+        connectionsBtn.addEventListener('click', () => {
+            connectionsBtn.classList.add('text-startup-primary', 'border-startup-primary');
+            requestsBtn.classList.remove('text-startup-primary', 'border-startup-primary');
+            // Show connections list here
+            this.showConnectionsList();
+            requestsView.classList.add('hidden');
+        });
+
+        requestsBtn.addEventListener('click', () => {
+            requestsBtn.classList.add('text-startup-primary', 'border-startup-primary');
+            connectionsBtn.classList.remove('text-startup-primary', 'border-startup-primary');
+            requestsView.classList.remove('hidden');
+        });
+    }
+
+    // Accept request buttons
+    document.querySelectorAll('.accept-request-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const requestId = btn.dataset.requestId;
+            try {
+                await API.acceptConnection(requestId);
+                this.loadConnectionsTabContent(); // Reload the entire tab
+                this.app.showToast('Connection accepted', 'success');
+            } catch (error) {
+                this.app.showToast(error.message || 'Failed to accept connection', 'error');
+            }
+        });
+    });
+
+    // Reject request buttons
+    document.querySelectorAll('.reject-request-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const requestId = btn.dataset.requestId;
+            try {
+                await API.rejectConnection(requestId);
+                this.loadConnectionsTabContent(); // Reload the entire tab
+                this.app.showToast('Connection request declined', 'success');
+            } catch (error) {
+                this.app.showToast(error.message || 'Failed to decline connection', 'error');
+            }
+        });
+    });
+
+    // Message buttons
+    document.querySelectorAll('.message-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                const userId = btn.dataset.userId;
+            const messagesTab = document.querySelector('[data-tab="messages"]');
+            if (messagesTab) {
+                messagesTab.click();
+                // Wait for messages tab content to load
+                setTimeout(() => {
+                    // Find and click the conversation item
+                    const conversationItem = document.querySelector(`.conversation-item[data-user-id="${userId}"]`);
+                    if (conversationItem) {
+                        conversationItem.click();
+                    } else {
+                        console.warn('Conversation not found for user:', userId);
+                    }
+                }, 500);
+            }
+            });
+        });
+
+    // Add to setupConnectionsEventListeners function
+document.querySelectorAll('.cancel-request-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+        const requestId = btn.dataset.requestId;
+        if (confirm('Are you sure you want to cancel this request?')) {
+            try {
+                await API.rejectConnection(requestId);
+                this.loadConnectionsTabContent(); // Reload the entire tab
+                this.app.showToast('Connection request cancelled', 'success');
+            } catch (error) {
+                this.app.showToast(error.message || 'Failed to cancel request', 'error');
+            }
+        }
+    });
+});
+    // Remove connection buttons
+    document.querySelectorAll('.remove-connection-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const connectionId = btn.dataset.connectionId;
+            if (confirm('Are you sure you want to remove this connection?')) {
+                try {
+                    await API.deleteConnection(connectionId);
+                    this.loadConnectionsTabContent(); // Reload the entire tab
+                    this.app.showToast('Connection removed', 'success');
+                } catch (error) {
+                    this.app.showToast(error.message || 'Failed to remove connection', 'error');
+                }
+            }
+        });
+    });
+},
+/**
+ * Show connections list
+ */
+showConnectionsList: async function() {
+    const app = this.app;
+    const container = document.getElementById('connections-tab');
+    if (!container) return;
+
+    try {
+        const connections = await API.getConnections();
+        
+        // Update the container with connections list
+        if (connections && connections.data && connections.data.length > 0) {
             container.innerHTML = `
-                <div class="p-6">
-                    <h2 class="text-2xl font-bold text-startup-dark dark:text-white mb-6">Connections</h2>
-                    <p class="text-gray-600 dark:text-gray-300">Coming soon...</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    ${connections.data.map(connection => {
+                        const userId = connection.user._id || connection._id;
+                        return `
+                        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="flex items-center">
+                                    <div class="h-12 w-12 rounded-full bg-startup-primary text-white flex items-center justify-center text-xl font-bold">
+                                        ${connection.user?.name?.charAt(0).toUpperCase() || 'U'}
+                                    </div>
+                                    <div class="ml-4">
+                                        <h3 class="text-lg font-semibold text-startup-dark dark:text-white">
+                                            ${connection.user?.name || 'Unknown User'}
+                                        </h3>
+                                        <p class="text-sm text-gray-500 dark:text-gray-400">
+                                            ${connection.role || connection.user?.userType || 'User'}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex space-x-3">
+                                <button class="flex-1 px-4 py-2 bg-startup-primary text-white rounded-md hover:bg-opacity-90 message-btn"
+                                         data-user-id="${userId}"
+                                        data-user-name="${connection.user?.name || ''}">
+                                    Message
+                                </button>
+                                <button class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 remove-connection-btn"
+                                        data-connection-id="${connection.user?._id}">
+                                    Remove
+                                </button>
+                            </div>
+                        </div>
+                        
+                    `}).join('')}
                 </div>
             `;
-        } catch (error) {
+        } else {
             container.innerHTML = `
-                <div class="p-6">
-                    <h2 class="text-2xl font-bold text-startup-dark dark:text-white mb-6">Connections</h2>
-                    <div class="text-red-500">Failed to load connections: ${error.message}</div>
+                <div class="text-center py-8">
+                    <div class="text-gray-400 text-5xl mb-4">
+                        <i class="fas fa-user-friends"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-startup-dark dark:text-white mb-2">No connections yet</h3>
+                    <p class="text-gray-600 dark:text-gray-300">Start connecting with other users to grow your network</p>
                 </div>
             `;
         }
-    },
+    } catch (error) {
+        console.error('Error loading connections:', error);
+        container.innerHTML = `
+            <div class="text-center py-8">
+                <div class="text-red-500 text-5xl mb-4">
+                    <i class="fas fa-exclamation-circle"></i>
+                </div>
+                <h3 class="text-xl font-bold text-startup-dark dark:text-white mb-2">Error loading connections</h3>
+                <p class="text-gray-600 dark:text-gray-300">${error.message || 'Failed to load connections'}</p>
+            </div>
+        `;
+    }
+    // Message buttons
+    document.querySelectorAll('.message-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            const userId = btn.dataset.userId;
+            const messagesTab = document.querySelector('[data-tab="messages"]');
+        if (messagesTab) {
+            messagesTab.click();
+            // Wait for messages tab content to load
+            setTimeout(() => {
+                // Find and click the conversation item
+                const conversationItem = document.querySelector(`.conversation-item[data-user-id="${userId}"]`);
+                if (conversationItem) {
+                    conversationItem.click();
+                } else {
+                    console.warn('Conversation not found for user:', userId);
+                }
+            }, 500);
+        }
+            this.startChat(userId, null, this.app);
+        });
+    });
+},
+/**
+ * Start a chat with a connection
+ * @param {string} userId - User ID to chat with
+ * @param {string} userName - Name of the user
+ */
+startChat: async function(userId, userName, app) {
+    if (!userId) {
+        throw new Error('User ID is required to start a chat');
+    }
+    try {
+        await API.startConversation({
+            recipient: userId,
+             message: `Hi${userName ? ` ${userName}` : ''}! I'd like to connect with you.`
+        });
+        
+        // Switch to messages tab
+        const messagesTab = document.querySelector('[data-tab="messages"]');
+        if (messagesTab) {
+            messagesTab.click();
+        }
+        
+        app?.showToast('Chat started!', 'success');
+    } catch (error) {
+        app?.showToast(error.message || 'Failed to start chat', 'error');
+        console.error('Error starting chat:', error);
+    }
+},
+
+/**
+ * Remove a connection
+ * @param {string} connectionId - Connection ID to remove
+ */
+removeConnection: async function(connectionId) {
+    if (!confirm('Are you sure you want to remove this connection?')) {
+        return;
+    }
+
+    try {
+        await API.removeConnection(connectionId);
+        this.loadConnectionsTabContent(); // Reload connections
+        //this.loadOverviewTabContent();    // Reload overview to update counts
+        this.app.showToast('Connection removed', 'success');
+    } catch (error) {
+        this.app.showToast(error.message || 'Failed to remove connection', 'error');
+        console.error('Error removing connection:', error);
+    }
+},
 
     /**
      * Load documents tab content
      */
     loadDocumentsTabContent: async function() {
-        const container = document.getElementById('documents-tab');
-        if (!container) return;
+    const container = document.getElementById('documents-tab');
+    if (!container) return;
+
+    // Show loading state
+    container.innerHTML = `
+        <div class="p-6">
+            <h2 class="text-2xl font-bold text-startup-dark dark:text-white mb-6">Documents</h2>
+            <div class="py-4 text-center">
+                <div class="spinner mx-auto mb-4"></div>
+                <p class="text-gray-600 dark:text-gray-300">Loading documents<span class="loading-dots"></span></p>
+            </div>
+        </div>
+    `;
+
+    try {
+        // Fetch documents from API
+        const response = await API.getDocuments();
+        const documents = response.documents || [];
+
+        if (documents.length === 0) {
+            container.innerHTML = `
+                <div class="p-6">
+                    <h2 class="text-2xl font-bold text-startup-dark dark:text-white mb-6">Documents</h2>
+                    <p class="text-gray-600 dark:text-gray-300">No documents uploaded yet.</p>
+                </div>
+            `;
+            return;
+        }
 
         container.innerHTML = `
             <div class="p-6">
                 <h2 class="text-2xl font-bold text-startup-dark dark:text-white mb-6">Documents</h2>
-                <div class="py-4 text-center">
-                    <div class="spinner mx-auto mb-4"></div>
-                    <p class="text-gray-600 dark:text-gray-300">Loading documents<span class="loading-dots"></span></p>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                        <thead>
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Name</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Uploaded</th>
+                                <th class="px-6 py-3"></th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                            ${documents.map(doc => `
+                                <tr>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-startup-dark dark:text-white">${doc.name || doc.filename || 'Document'}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">${doc.createdAt ? new Date(doc.createdAt).toLocaleDateString() : '-'}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm">
+                                        <a href="${doc.url || '#'}" target="_blank" class="text-startup-primary hover:underline">View</a>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
                 </div>
             </div>
         `;
-
-        try {
-            const documents = await API.getDocuments();
-            // Render documents content
-            // TODO: Implement documents UI
-            container.innerHTML = `
-                <div class="p-6">
-                    <h2 class="text-2xl font-bold text-startup-dark dark:text-white mb-6">Documents</h2>
-                    <p class="text-gray-600 dark:text-gray-300">Coming soon...</p>
-                </div>
-            `;
-        } catch (error) {
-            container.innerHTML = `
-                <div class="p-6">
-                    <h2 class="text-2xl font-bold text-startup-dark dark:text-white mb-6">Documents</h2>
-                    <div class="text-red-500">Failed to load documents: ${error.message}</div>
-                </div>
-            `;
-        }
-    },
+    } catch (error) {
+        container.innerHTML = `
+            <div class="p-6">
+                <h2 class="text-2xl font-bold text-startup-dark dark:text-white mb-6">Documents</h2>
+                <div class="text-red-500">Failed to load documents: ${error.message}</div>
+            </div>
+        `;
+    }
+},
 
     /**
      * Load portfolio tab content
      */
     loadPortfolioTabContent: async function() {
-        const container = document.getElementById('portfolio-tab');
-        if (!container) return;
+    const container = document.getElementById('portfolio-tab');
+    if (!container) return;
 
-        container.innerHTML = `
-            <div class="p-6">
-                <h2 class="text-2xl font-bold text-startup-dark dark:text-white mb-6">Portfolio</h2>
-                <div class="py-4 text-center">
-                    <div class="spinner mx-auto mb-4"></div>
-                    <p class="text-gray-600 dark:text-gray-300">Loading portfolio<span class="loading-dots"></span></p>
+    // Show loading state
+    container.innerHTML = `
+        <div class="p-6">
+            <h2 class="text-2xl font-bold text-startup-dark dark:text-white mb-6">Portfolio</h2>
+            <div class="py-4 text-center">
+                <div class="spinner mx-auto mb-4"></div>
+                <p class="text-gray-600 dark:text-gray-300">Loading portfolio<span class="loading-dots"></span></p>
+            </div>
+        </div>
+    `;
+
+    try {
+        // Fetch portfolio from API
+        const response = await API.getPortfolio();
+        const portfolio = response.portfolio || [];
+
+        // Add Company Button and Modal
+        const addCompanyBtn = `
+            <button id="add-portfolio-company-btn" class="mb-6 px-4 py-2 bg-startup-primary text-white rounded-md hover:bg-opacity-90">
+                <i class="fas fa-plus mr-2"></i>Add Company
+            </button>
+        `;
+
+        const addCompanyModal = `
+            <div id="add-company-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 hidden">
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8 w-full max-w-lg max-h-[60vh] overflow-y-auto">
+                    <h3 class="text-xl font-bold mb-4 text-startup-dark dark:text-white">Add Portfolio Company</h3>
+                    <form id="add-company-form" class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Company Name</label>
+                            <input name="name" type="text" required class="w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:text-white" />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Industry</label>
+                            <input name="industry" type="text" class="w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:text-white" />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Description</label>
+                            <textarea name="description" rows="2" class="w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:text-white"></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Investment Amount (USD)</label>
+                            <input name="investmentAmount" type="number" min="0" class="w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:text-white" />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Stage</label>
+                            <input name="stage" type="text" class="w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:text-white" />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Year</label>
+                            <input name="year" type="number" min="2000" max="${new Date().getFullYear()}" class="w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:text-white" />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Website</label>
+                            <input name="website" type="url" class="w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:text-white" />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Pitch Deck URL</label>
+                            <input name="pitchDeck" type="url" class="w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:text-white" />
+                        </div>
+                        <div class="flex justify-end space-x-2 mt-4">
+                            <button type="button" id="cancel-add-company-btn" class="px-4 py-2 bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-white rounded-md">Cancel</button>
+                            <button type="submit" class="px-4 py-2 bg-startup-primary text-white rounded-md">Add</button>
+                        </div>
+                    </form>
                 </div>
             </div>
         `;
 
-        try {
-            const portfolio = await API.getPortfolio();
-            // Render portfolio content
-            // TODO: Implement portfolio UI
-            container.innerHTML = `
-                <div class="p-6">
-                    <h2 class="text-2xl font-bold text-startup-dark dark:text-white mb-6">Portfolio</h2>
-                    <p class="text-gray-600 dark:text-gray-300">Coming soon...</p>
-                </div>
-            `;
-        } catch (error) {
-            container.innerHTML = `
-                <div class="p-6">
-                    <h2 class="text-2xl font-bold text-startup-dark dark:text-white mb-6">Portfolio</h2>
-                    <div class="text-red-500">Failed to load portfolio: ${error.message}</div>
+        // Portfolio List
+        let portfolioHtml = '';
+        if (portfolio.length === 0) {
+            portfolioHtml = `<p class="text-gray-600 dark:text-gray-300">No portfolio companies added yet.</p>`;
+        } else {
+            portfolioHtml = `
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    ${portfolio.map(company => `
+                        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 flex flex-col">
+                            <div class="flex items-center mb-4">
+                                <div class="h-12 w-12 rounded-full bg-startup-primary text-white flex items-center justify-center text-xl font-bold">
+                                    ${company.name?.charAt(0).toUpperCase() || 'C'}
+                                </div>
+                                <div class="ml-4">
+                                    <h3 class="text-lg font-semibold text-startup-dark dark:text-white">${company.name || 'Company'}</h3>
+                                    <p class="text-sm text-gray-500 dark:text-gray-400">${company.industry || ''}</p>
+                                </div>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-gray-600 dark:text-gray-300 text-sm mb-2">${company.description || ''}</p>
+                                <ul class="text-xs text-gray-500 dark:text-gray-400 space-y-1 mb-2">
+                                    ${company.investmentAmount ? `<li><i class="fas fa-dollar-sign mr-1"></i> Invested: $${company.investmentAmount.toLocaleString()}</li>` : ''}
+                                    ${company.stage ? `<li><i class="fas fa-layer-group mr-1"></i> Stage: ${company.stage}</li>` : ''}
+                                    ${company.year ? `<li><i class="fas fa-calendar-alt mr-1"></i> Year: ${company.year}</li>` : ''}
+                                    ${company.website ? `<li><i class="fas fa-globe mr-1"></i> <a href="${company.website}" target="_blank" class="text-startup-primary hover:underline">Website</a></li>` : ''}
+                                </ul>
+                            </div>
+                            <div class="mt-4 flex space-x-2">
+                                ${company.website ? `<a href="${company.website}" target="_blank" class="flex-1 px-4 py-2 bg-startup-primary text-white rounded-md hover:bg-opacity-90 text-center">Visit</a>` : ''}
+                                ${company.pitchDeck ? `<a href="${company.pitchDeck}" target="_blank" class="flex-1 px-4 py-2 border border-startup-primary text-startup-primary rounded-md hover:bg-startup-primary hover:text-white text-center">Pitch Deck</a>` : ''}
+                            </div>
+                        </div>
+                    `).join('')}
                 </div>
             `;
         }
-    },
+
+        container.innerHTML = `
+            <div class="p-6">
+                <h2 class="text-2xl font-bold text-startup-dark dark:text-white mb-6">Portfolio</h2>
+                ${addCompanyBtn}
+                ${portfolioHtml}
+            </div>
+            ${addCompanyModal}
+        `;
+
+        // Show modal on button click
+        document.getElementById('add-portfolio-company-btn').onclick = () => {
+            document.getElementById('add-company-modal').classList.remove('hidden');
+        };
+        // Hide modal on cancel
+        document.getElementById('cancel-add-company-btn').onclick = () => {
+            document.getElementById('add-company-modal').classList.add('hidden');
+        };
+
+        // Handle form submission
+        document.getElementById('add-company-form').onsubmit = async (e) => {
+            e.preventDefault();
+            const form = e.target;
+            const formData = new FormData(form);
+            const data = {};
+            formData.forEach((value, key) => {
+                data[key] = value;
+            });
+            // Convert numeric fields
+            if (data.investmentAmount) data.investmentAmount = parseFloat(data.investmentAmount);
+            if (data.year) data.year = parseInt(data.year);
+
+            try {
+                await API.addPortfolioCompany(data);
+                this.app?.showToast('Portfolio company added!', 'success');
+                document.getElementById('add-company-modal').classList.add('hidden');
+                this.loadPortfolioTabContent(); // Refresh list
+            } catch (error) {
+                this.app?.showToast(error.message || 'Failed to add company', 'error');
+            }
+        };
+
+    } catch (error) {
+        container.innerHTML = `
+            <div class="p-6">
+                <h2 class="text-2xl font-bold text-startup-dark dark:text-white mb-6">Portfolio</h2>
+                <div class="text-red-500">Failed to load portfolio: ${error.message}</div>
+            </div>
+        `;
+    }
+},
 
     /**
      * Load analytics tab content
      */
     loadAnalyticsTabContent: async function() {
-        const container = document.getElementById('analytics-tab');
-        if (!container) return;
+    const container = document.getElementById('analytics-tab');
+    if (!container) return;
 
-        container.innerHTML = `
-            <div class="p-6">
-                <h2 class="text-2xl font-bold text-startup-dark dark:text-white mb-6">Analytics</h2>
-                <div class="py-4 text-center">
-                    <div class="spinner mx-auto mb-4"></div>
-                    <p class="text-gray-600 dark:text-gray-300">Loading analytics<span class="loading-dots"></span></p>
+    // Show loading state
+    container.innerHTML = `
+        <div class="p-6">
+            <h2 class="text-2xl font-bold text-startup-dark dark:text-white mb-6">Analytics</h2>
+            <div class="py-4 text-center">
+                <div class="spinner mx-auto mb-4"></div>
+                <p class="text-gray-600 dark:text-gray-300">Loading analytics<span class="loading-dots"></span></p>
+            </div>
+        </div>
+    `;
+
+    try {
+        const user = Auth.getCurrentUser();
+        let analytics = {};
+        let isStartup = user.userType === 'startup';
+
+        // Fetch analytics data
+        const response = await API.getAnalytics();
+        // Support both { analytics: {...} } and { data: {...} }
+        analytics = response.analytics || response.data || {};
+
+        // Fallbacks for missing fields
+        const profileViews = analytics.views ?? analytics.profileViews ?? 0;
+        const connections = analytics.connections ?? 0;
+        const messages = analytics.messages ?? 0;
+        const matchScore = analytics.matchScore ?? '-';
+        const revenue = analytics.revenue ?? 0;
+        const users = analytics.users ?? 0;
+        const growth = analytics.growth ?? null;
+        const runway = analytics.runway ?? null;
+
+        // Main metrics cards
+        let cardsHtml = `
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-4 dashboard-card">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 bg-startup-primary bg-opacity-10 rounded-full p-3">
+                            <i class="fas fa-eye text-startup-primary"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Profile Views</p>
+                            <p class="text-2xl font-bold text-startup-dark dark:text-white">${profileViews}</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-4 dashboard-card">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 bg-green-100 rounded-full p-3">
+                            <i class="fas fa-handshake text-green-600"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Connections</p>
+                            <p class="text-2xl font-bold text-startup-dark dark:text-white">${connections}</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-4 dashboard-card">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 bg-blue-100 rounded-full p-3">
+                            <i class="fas fa-comment-alt text-blue-600"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Messages</p>
+                            <p class="text-2xl font-bold text-startup-dark dark:text-white">${messages}</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-4 dashboard-card">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 bg-yellow-100 rounded-full p-3">
+                            <i class="fas fa-star text-yellow-600"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Match Score</p>
+                            <p class="text-2xl font-bold text-startup-dark dark:text-white">${matchScore}/10</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         `;
 
-        try {
-            const analytics = await API.getAnalytics();
-            // Render analytics content
-            // TODO: Implement analytics UI
-            container.innerHTML = `
-                <div class="p-6">
-                    <h2 class="text-2xl font-bold text-startup-dark dark:text-white mb-6">Analytics</h2>
-                    <p class="text-gray-600 dark:text-gray-300">Coming soon...</p>
-                </div>
-            `;
-        } catch (error) {
-            container.innerHTML = `
-                <div class="p-6">
-                    <h2 class="text-2xl font-bold text-startup-dark dark:text-white mb-6">Analytics</h2>
-                    <div class="text-red-500">Failed to load analytics: ${error.message}</div>
+        // Extra metrics for startups (revenue, users, growth, runway)
+        let extraHtml = '';
+        if (isStartup) {
+            extraHtml = `
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-4 dashboard-card">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0 bg-purple-100 rounded-full p-3">
+                                <i class="fas fa-dollar-sign text-purple-600"></i>
+                            </div>
+                            <div class="ml-4">
+                                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Revenue</p>
+                                <p class="text-2xl font-bold text-startup-dark dark:text-white">$${revenue.toLocaleString()}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-4 dashboard-card">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0 bg-pink-100 rounded-full p-3">
+                                <i class="fas fa-users text-pink-600"></i>
+                            </div>
+                            <div class="ml-4">
+                                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Active Users</p>
+                                <p class="text-2xl font-bold text-startup-dark dark:text-white">${users}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-4 dashboard-card">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0 bg-indigo-100 rounded-full p-3">
+                                <i class="fas fa-chart-line text-indigo-600"></i>
+                            </div>
+                            <div class="ml-4">
+                                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Growth Rate</p>
+                                <p class="text-2xl font-bold text-startup-dark dark:text-white">${growth !== null ? growth + '%' : '-'}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-4 dashboard-card">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0 bg-teal-100 rounded-full p-3">
+                                <i class="fas fa-hourglass-half text-teal-600"></i>
+                            </div>
+                            <div class="ml-4">
+                                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Runway</p>
+                                <p class="text-2xl font-bold text-startup-dark dark:text-white">${runway !== null ? runway + ' months' : '-'}</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             `;
         }
-    },
+
+        // Overview section
+        let overviewHtml = `
+            <div class="mt-8">
+                <h3 class="text-lg font-bold text-startup-dark dark:text-white mb-4">Analytics Overview</h3>
+                <ul class="space-y-2 text-sm">
+                    <li><i class="fas fa-eye text-startup-primary mr-2"></i> Your profile has been viewed <span class="font-semibold">${profileViews}</span> times.</li>
+                    <li><i class="fas fa-handshake text-green-600 mr-2"></i> You have <span class="font-semibold">${connections}</span> connections.</li>
+                    <li><i class="fas fa-comment-alt text-blue-600 mr-2"></i> You have exchanged <span class="font-semibold">${messages}</span> messages.</li>
+                    <li><i class="fas fa-star text-yellow-600 mr-2"></i> Your current match score is <span class="font-semibold">${matchScore}/10</span>.</li>
+                    ${isStartup ? `
+                        <li><i class="fas fa-dollar-sign text-purple-600 mr-2"></i> Total revenue: <span class="font-semibold">$${revenue.toLocaleString()}</span></li>
+                        <li><i class="fas fa-users text-pink-600 mr-2"></i> Active users: <span class="font-semibold">${users}</span></li>
+                        <li><i class="fas fa-chart-line text-indigo-600 mr-2"></i> Growth rate: <span class="font-semibold">${growth !== null ? growth + '%' : '-'}</span></li>
+                        <li><i class="fas fa-hourglass-half text-teal-600 mr-2"></i> Runway: <span class="font-semibold">${runway !== null ? runway + ' months' : '-'}</span></li>
+                    ` : ''}
+                </ul>
+            </div>
+        `;
+
+        // Render analytics content
+        container.innerHTML = `
+            <div class="p-6">
+                <h2 class="text-2xl font-bold text-startup-dark dark:text-white mb-6">Analytics</h2>
+                ${cardsHtml}
+                ${extraHtml}
+                ${overviewHtml}
+            </div>
+        `;
+    } catch (error) {
+        container.innerHTML = `
+            <div class="p-6">
+                <h2 class="text-2xl font-bold text-startup-dark dark:text-white mb-6">Analytics</h2>
+                <div class="text-red-500">Failed to load analytics: ${error.message}</div>
+            </div>
+        `;
+    }
+},
 
     /**
      * Set up startup dashboard event listeners
@@ -2478,7 +3475,7 @@ const DashboardPage = {
      */
     setupStartupDashboardEventListeners: function(app, profile) {
         // Dashboard navigation handled by setupDashboardTabs
-        
+        this.app = app;
         // Complete profile button
         const completeProfileBtn = document.getElementById('complete-profile-items-btn');
         if (completeProfileBtn) {
@@ -2558,7 +3555,7 @@ const DashboardPage = {
      */
     setupInvestorDashboardEventListeners: function(app, profile) {
         // Dashboard navigation handled by setupDashboardTabs
-        
+        this.app = app;
         // Complete profile button
         const completeProfileBtn = document.getElementById('complete-investor-profile-items-btn');
         if (completeProfileBtn) {

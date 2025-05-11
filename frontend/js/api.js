@@ -410,7 +410,53 @@ class ApiService {
     async getConnections() {
         return this.get('/connections');
     }
+
+    /**
+     * Get all documents
+     * @returns {Promise} - List of documents
+     */
+    async getDocuments() {
+        return this.get('/startups/user/documents');
+    }
+
+    /**
+     * Get analytics data
+     * @returns {Promise} - Analytics data
+     */
+    async getAnalytics() {
+        return this.get('/startups/user/analytics');
+    }
+
+/**
+ * Save an investor to user's saved list
+ * @param {string} investorId - Investor ID to save
+ * @returns {Promise} - Success message
+ */
+async saveInvestor(investorId) {
+    return this.post('/investors/save', { investorId });
 }
 
+/**
+ * Remove an investor from user's saved list
+ * @param {string} investorId - Investor ID to remove
+ * @returns {Promise} - Success message
+ */
+async removeSavedInvestor(investorId) {
+    return this.delete(`/investors/save/${investorId}`);
+}
+
+async getPortfolio() {
+    return this.get('/investors/user/portfolio');
+}
+async addPortfolioCompany(company) {
+    return this.post('/investors/user/portfolio', company);
+}
+async editPortfolioCompany(companyId, data) {
+    return this.put(`/investors/user/portfolio/${companyId}`, data);
+}
+async getStartupOpportunities() {
+    return this.get('/investors/user/startup-opportunities');
+}
+}
 // Create and export API instance
 const API = new ApiService();

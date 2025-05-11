@@ -1,6 +1,7 @@
 const Startup = require('../models/Startup.js');
 const User = require('../models/User.js');
-
+const Investor = require('../models/Investor.js');
+const Connection = require('../models/Connection.js');
 // @desc    Get all startups
 // @route   GET /api/startups
 // @access  Public
@@ -335,6 +336,177 @@ exports.getStartupMatches = async (req, res, next) => {
             data: matchingInvestors
         });
         
+    } catch (error) {
+        next(error);
+    }
+};
+exports.getInvestorMatches = async (req, res, next) => {
+    try {
+        const startup = await Startup.findById(req.params.id)
+            .populate('userId', 'name email');
+
+        if (!startup) {
+            return res.status(404).json({
+                success: false,
+                message: 'Startup not found'
+            });
+        }
+
+        // Find matching investors based on startup criteria
+        const matchingInvestors = await Investor.find({
+            // Match industry focus with startup's industry
+            focus: { $in: [startup.industry] },
+            
+            // Match funding stage
+            stage: { $in: [startup.funding] },
+            
+            // Match funding amount within investor's range
+            min: { $lte: startup.fundingGoal || 0 },
+            max: { $gte: startup.fundingGoal || 0 },
+            
+            // Only active investors
+            isActive: true,
+            
+            // Exclude already connected investors
+            _id: { 
+                $nin: await Connection.distinct('investor', { 
+                    startup: startup._id,
+                    status: { $in: ['accepted', 'pending'] }
+                })
+            }
+        })
+        .populate('userId', 'name email')
+        .select('firm position focus stage min max location bio portfolioSize');
+
+        // Calculate match percentage for each investor
+        const matches = matchingInvestors.map(investor => {
+            let score = 0;
+            let matchDetails = [];
+            
+            // Industry match (40%)
+            if (investor.focus.includes(startup.industry)) {
+                score += 40;
+                matchDetails.push({
+                    type: 'Industry Match',
+                    score: 40,
+                    detail: startup.industry
+                });
+            }
+            
+            // Stage match (30%)
+            if (investor.stage.includes(startup.funding)) {
+                score += 30;
+                matchDetails.push({
+                    type: 'Stage Match',
+                    score: 30,
+                    detail: startup.funding
+                });
+            }
+            
+            // Funding match (30%)
+            if (startup.fundingGoal >= investor.min && startup.fundingGoal <= investor.max) {
+                score += 30;
+                matchDetails.push({
+                    type: 'Investment Range',
+                    score: 30,
+                    detail: `$${investor.min.toLocaleString()} - $${investor.max.toLocaleString()}`
+                });
+            }
+
+            return {
+                investor: {
+                    _id: investor._id,
+                    name: investor.userId?.name || 'Anonymous Investor',
+                    firm: investor.firm,
+                    position: investor.position,
+                    focus: investor.focus,
+                    stage: investor.stage,
+                    location: investor.location,
+                    portfolioSize: investor.portfolioSize,
+                    bio: investor.bio
+                },
+                matchPercentage: Math.round(score),
+                matchDetails: matchDetails
+            };
+        });
+
+        // Sort by match percentage
+        matches.sort((a, b) => b.matchPercentage - a.matchPercentage);
+        
+        res.status(200).json({
+            success: true,
+            count: matches.length,
+            data: matches
+        });
+        
+    } catch (error) {
+        next(error);
+    }
+};
+exports.getStartupDocuments = async (req, res, next) => {
+    try {
+        const startup = await Startup.findOne({ userId: req.user.id });
+        
+        if (!startup) {
+            return res.status(404).json({
+                success: false,
+                message: 'Startup profile not found'
+            });
+        }
+        
+        res.status(200).json({
+            success: true,
+            documents: startup.documents
+        });
+        
+    } catch (error) {
+        next(error);
+    }
+};
+exports.getStartupAnalytics = async (req, res, next) => {
+    try {
+        const startup = await Startup.findOne({ userId: req.user.id });
+
+        if (!startup) {
+            return res.status(404).json({
+                success: false,
+                message: 'Startup profile not found'
+            });
+        }
+
+        // Get number of accepted connections
+        const connections = await Connection.countDocuments({ startup: startup._id, status: 'accepted' });
+
+        // Get number of views (assuming views are tracked in the Startup model)
+        const views = startup.views || 0;
+
+        // Get metrics from the startup document
+        const metrics = startup.metrics || {};
+
+        // Calculate growth rate (if possible)
+        let growthRate = null;
+        if (typeof metrics.growth === 'number' && typeof metrics.users === 'number' && metrics.users > 0) {
+            growthRate = metrics.growth;
+        }
+
+        // Calculate runway in months (if possible)
+        let runwayMonths = null;
+        if (typeof metrics.runway === 'number' && metrics.runway > 0) {
+            runwayMonths = metrics.runway;
+        }
+
+        res.status(200).json({
+            success: true,
+            data: {
+                connections,
+                views,
+                revenue: metrics.revenue || 0,
+                users: metrics.users || 0,
+                growth: growthRate,
+                runway: runwayMonths
+            }
+        });
+
     } catch (error) {
         next(error);
     }

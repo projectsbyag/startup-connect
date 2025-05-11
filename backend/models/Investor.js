@@ -1,5 +1,16 @@
 const mongoose = require('mongoose');
 
+const PortfolioCompanySchema = new mongoose.Schema({
+    name: { type: String, required: true },
+    industry: String,
+    description: String,
+    investmentAmount: Number,
+    stage: String,
+    year: Number,
+    website: String,
+    pitchDeck: String
+}, { _id: true, timestamps: true });
+
 const InvestorSchema = new mongoose.Schema({
     userId: {
         type: mongoose.Schema.Types.ObjectId,
@@ -23,6 +34,26 @@ const InvestorSchema = new mongoose.Schema({
         type: String,
         required: [true, 'Please add location']
     },
+    documents: [
+        {
+            name: {
+                type: String,
+                required: true
+            },
+            fileUrl: {
+                type: String,
+                required: true
+            },
+            fileType: {
+                type: String,
+                required: true
+            },
+            uploadDate: {
+                type: Date,
+                default: Date.now
+            }
+        }
+    ],
     focus: {
         type: [String],
         required: [true, 'Please add at least one investment focus area'],
@@ -57,32 +88,7 @@ const InvestorSchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
-    portfolio: [
-        {
-            name: {
-                type: String,
-                required: true
-            },
-            description: {
-                type: String
-            },
-            industry: {
-                type: String
-            },
-            investmentDate: {
-                type: Date
-            },
-            investmentAmount: {
-                type: Number
-            },
-            website: {
-                type: String
-            },
-            logo: {
-                type: String
-            }
-        }
-    ],
+    portfolio: [PortfolioCompanySchema],
     website: {
         type: String,
         match: [
@@ -123,6 +129,7 @@ const InvestorSchema = new mongoose.Schema({
     toJSON: { virtuals: true },
     toObject: { virtuals: true }
 });
+
 
 // Update the "updatedAt" field on save
 InvestorSchema.pre('save', function(next) {
