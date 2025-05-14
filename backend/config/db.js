@@ -1,7 +1,7 @@
 // config/db.js
-require('dotenv').config();
+ const dotenv = require('dotenv');
 const mongoose = require('mongoose');
-
+dotenv.config();
 const connectDB = async () => {
   // 1) pick up the .env value, fall back to hard‑coded IPv4 URI
   const MONGO_URI = process.env.DATABASE_URI?.trim() || 'mongodb://127.0.0.1:27017/startup-connect';
