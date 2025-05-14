@@ -214,8 +214,9 @@ class App {
         
         try {
             await Auth.login({ email, password });
-            
-            document.dispatchEvent(new Event('user:login'));
+
+           document.dispatchEvent(new Event('user:login'));
+           document.dispatchEvent(new Event('loginSuccess'));
             // Close modal
             document.getElementById('login-modal').classList.add('hidden');
             
@@ -271,7 +272,9 @@ class App {
                 password,
                 userType: type
             });
-            
+        
+        document.dispatchEvent(new Event('user:signup'));
+        document.dispatchEvent(new Event('loginSuccess'));
             // Close modal
             document.getElementById('signup-modal').classList.add('hidden');
             
