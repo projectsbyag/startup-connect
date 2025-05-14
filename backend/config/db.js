@@ -4,7 +4,7 @@ const mongoose = require('mongoose');
 
 const connectDB = async () => {
   // 1) pick up the .env value, fall back to hard‑coded IPv4 URI
-  const MONGO_URI = process.env.MONGODB_URI?.trim() || 'mongodb://127.0.0.1:27017/startup-connect';
+  const MONGO_URI = process.env.DATABASE_URI?.trim() || 'mongodb://127.0.0.1:27017/startup-connect';
 
   // 2) surface it immediately in your logs
   console.log('→ Mongo will connect to:', MONGO_URI);
