@@ -19,6 +19,9 @@ router.get('/user/startup-opportunities', protect, investorController.getStartup
 router.get('/user/:userId', protect, investorController.getInvestorByUserId);
 // Ensure that 'protect', 'authorize', and 'investorController.createInvestor' are all functions
 router.post('/', protect, authorize('investor'), investorController.createInvestor);
+router.post('/save-investor', protect, investorController.saveInvestor);
+router.post('/remove-saved-investor', protect, investorController.removeSavedInvestor);
+
 router.put('/:id', protect, investorController.updateInvestor);
 router.delete('/:id', protect, investorController.deleteInvestor);
 

@@ -569,6 +569,7 @@ class App {
             case 'dashboard':
                 DashboardPage.setupEventListeners(this);
                 break;
+            
             case 'profile':
                 ProfilePage.setupEventListeners(this);
                 break;

@@ -1,6 +1,7 @@
 const Investor = require('../models/Investor.js');
 const Startup = require('../models/Startup.js');
 const Connection = require('../models/Connection.js');
+const Message = require('../models/Message.js');
 const User = require('../models/User.js');
 
 // @desc    Get all investors
@@ -103,27 +104,37 @@ exports.getInvestor = async (req, res, next) => {
 // @access  Private
 exports.getInvestorByUserId = async (req, res, next) => {
     try {
-        const userId = req.params.userId || req.user.id;
-        
-        const investor = await Investor.findOne({ userId });
-        
-        if (!investor) {
-            return res.status(404).json({
-                success: false,
-                message: 'Investor profile not found'
-            });
-        }
-        
-        res.status(200).json({
-            success: true,
-            investor
+        const investor = await Investor.findOne({ userId: req.params.userId });
+        if (!investor) return res.status(404).json({ success: false, message: 'Investor not found' });
+
+        const connections = await Connection.countDocuments({
+            status: 'accepted',
+            $or: [
+                { requester: investor.userId },
+                { recipient: investor.userId }
+            ]
         });
-        
+        // Calculate stats
+        const matches = await Startup.countDocuments({ /* your matching logic here */ });
+        const messages = await Message.countDocuments({ $or: [{ sender: investor.userId }, { recipient: investor.userId }] });
+        const portfolio = investor.portfolio.length;
+
+        res.json({
+            success: true,
+            investor: {
+                ...investor.toObject(),
+                stats: {
+                    matches,
+                    connections,
+                    messages,
+                    portfolio
+                }
+            }
+        });
     } catch (error) {
         next(error);
     }
 };
-
 // @desc    Create new investor
 // @route   POST /api/investors
 // @access  Private
@@ -488,3 +499,34 @@ exports.getStartupOpportunities = async (req, res, next) => {
         next(error);
     }
 };
+
+exports.saveInvestor = async (req, res, next) => {
+    try {
+        const user = await User.findById(req.user.id);
+        if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+
+        // Check if investor exists
+        const investor = await Investor.findById(req.body.investorId);
+        if (!investor) return res.status(404).json({ success: false, message: 'Investor profile not found' });
+
+        if (!user.savedInvestors) user.savedInvestors = [];
+        if (!user.savedInvestors.includes(req.body.investorId)) {
+            user.savedInvestors.push(req.body.investorId);
+            await user.save();
+        }
+        res.json({ success: true, message: 'Investor saved' });
+    } catch (error) { next(error); }
+};
+
+exports.removeSavedInvestor = async (req, res, next) => {
+    try {
+        const user = await User.findById(req.user.id);
+        if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+
+        if (!user.savedInvestors) user.savedInvestors = [];
+        user.savedInvestors = user.savedInvestors.filter(id => id.toString() !== req.body.investorId);
+        await user.save();
+        res.json({ success: true, message: 'Investor removed from saved' });
+    } catch (error) { next(error); }
+};
+

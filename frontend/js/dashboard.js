@@ -63,6 +63,7 @@ const DashboardPage = {
      * @returns {string} - HTML content
      */
     renderStartupDashboard: function(user) {
+        
         // Loading state for initial load
         return `
             <div class="bg-gray-50 dark:bg-gray-900 py-6">
@@ -471,7 +472,9 @@ const DashboardPage = {
                         <a href="#" class="dashboard-nav flex items-center px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800" data-tab="messages">
                             <i class="fas fa-comment-alt w-5 mr-2"></i>
                             <span>Messages</span>
-                            <span id="message-count" class="ml-auto inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-red-500 rounded-full">0</span>
+                            <span id="message-count" class="ml-auto inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-red-500 rounded-full">
+                            ${profile.stats?.unreadMessages ?? profile.stats?.messages ?? 0}
+                            </span>
                         </a>
                         <a href="#" class="dashboard-nav flex items-center px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800" data-tab="connections">
                             <i class="fas fa-user-friends w-5 mr-2"></i>
@@ -732,7 +735,9 @@ const DashboardPage = {
                         <a href="#" class="dashboard-nav flex items-center px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800" data-tab="messages">
                             <i class="fas fa-comment-alt w-5 mr-2"></i>
                             <span>Messages</span>
-                            <span id="message-count" class="ml-auto inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-red-500 rounded-full">0</span>
+                            <span id="message-count" class="ml-auto inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-red-500 rounded-full">
+                            ${profile.stats?.unreadMessages ?? profile.stats?.messages ?? 0}
+                            </span>
                         </a>
                         <a href="#" class="dashboard-nav flex items-center px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800" data-tab="connections">
                             <i class="fas fa-user-friends w-5 mr-2"></i>
@@ -1150,7 +1155,7 @@ const DashboardPage = {
             
             try {
                 // Create startup profile
-                const startupProfile = await API.saveStartupProfile({
+                const startupProfile = await API.updateStartup({
                     name: startupName,
                     description: description,
                     industry: industry,
@@ -1583,21 +1588,37 @@ const DashboardPage = {
                         if (linkedin) socialMedia.linkedin = linkedin;
                         if (twitter) socialMedia.twitter = twitter;
                         
-                        // Update startup profile
-                        await API.saveStartupProfile({
-                            _id: startupId,
-                            name,
-                            industry,
-                            description,
-                            pitch,
-                            funding,
-                            fundingAmount,
-                            employees,
-                            founded,
-                            location,
-                            website,
-                            socialMedia
-                        });
+                        // Update or create startup profile
+                        if (startupId) {
+                            await API.updateStartup({
+                                _id: startupId,
+                                name,
+                                industry,
+                                description,
+                                pitch,
+                                funding,
+                                fundingAmount,
+                                employees,
+                                founded,
+                                location,
+                                website,
+                                socialMedia
+                            });
+                        } else {
+                            await API.createStartup({
+                                name,
+                                industry,
+                                description,
+                                pitch,
+                                funding,
+                                fundingAmount,
+                                employees,
+                                founded,
+                                location,
+                                website,
+                                socialMedia
+                            });
+                        }
                         
                         // Show success message
                         this.app.showToast('Profile updated successfully!', 'success');
@@ -2407,227 +2428,183 @@ setupMatchButtonListeners: function() {
      * Load messages tab content
      */
     loadMessagesTabContent: async function() {
-        const container = document.getElementById('messages-tab');
-        if (!container) return;
+    const container = document.getElementById('messages-tab');
+    if (!container) return;
+
+    container.innerHTML = `
+        <div class="p-6">
+            <h2 class="text-2xl font-bold text-startup-dark dark:text-white mb-6">Messages</h2>
+            <div class="py-4 text-center">
+                <div class="spinner mx-auto mb-4"></div>
+                <p class="text-gray-600 dark:text-gray-300">Loading messages<span class="loading-dots"></span></p>
+            </div>
+        </div>
+    `;
+
+    try {
+        const response = await API.getConversations();
+        const conversations = response.data || [];
 
         container.innerHTML = `
             <div class="p-6">
                 <h2 class="text-2xl font-bold text-startup-dark dark:text-white mb-6">Messages</h2>
-                <div class="py-4 text-center">
-                    <div class="spinner mx-auto mb-4"></div>
-                    <p class="text-gray-600 dark:text-gray-300">Loading messages<span class="loading-dots"></span></p>
-                </div>
-            </div>
-        `;
-
-        try {
-            const response = await API.getConversations();
-            const messages = response.messages || [];
-            
-            // Group messages by conversation
-            const conversations = messages.reduce((acc, msg) => {
-                const key = msg.senderId === Auth.getCurrentUser()._id ? msg.recipientId : msg.senderId;
-                if (!acc[key]) {
-                    acc[key] = [];
-                }
-                acc[key].push(msg);
-                return acc;
-            }, {});
-
-            container.innerHTML = `
-                <div class="p-6">
-                    <h2 class="text-2xl font-bold text-startup-dark dark:text-white mb-6">Messages</h2>
-                    
-                    <div class="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
-                        <div class="grid grid-cols-1 md:grid-cols-3">
-                            <!-- Conversations List -->
-                            <div class="border-r border-gray-200 dark:border-gray-700">
-                                <div class="p-4 border-b border-gray-200 dark:border-gray-700">
-                                    <input type="text" 
-                                        id="search-conversations" 
-                                        placeholder="Search conversations..." 
-                                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-startup-primary focus:border-startup-primary dark:bg-gray-700 dark:text-white">
-                                </div>
-                                <div class="overflow-y-auto h-[600px]" id="conversations-list">
-                                    ${Object.entries(conversations).length > 0 ? 
-                                        Object.entries(conversations).map(([userId, msgs]) => {
-                                            const latestMsg = msgs[msgs.length - 1];
-                                            const unreadCount = msgs.filter(m => !m.read && m.recipientId === Auth.getCurrentUser()._id).length;
-                                            return `
-                                                <div class="conversation-item p-4 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer" data-user-id="${userId}">
-                                                    <div class="flex items-center justify-between">
-                                                        <div class="flex items-center">
-                                                            <div class="h-10 w-10 rounded-full bg-startup-primary text-white flex items-center justify-center">
-                                                                <span>${latestMsg.senderName?.substring(0, 2).toUpperCase() || 'U'}</span>
-                                                            </div>
-                                                            <div class="ml-3">
-                                                                <p class="text-sm font-medium text-startup-dark dark:text-white">${latestMsg.senderName || 'Unknown User'}</p>
-                                                                <p class="text-xs text-gray-500 dark:text-gray-400 truncate">
-                                                                    ${latestMsg.content.substring(0, 50)}${latestMsg.content.length > 50 ? '...' : ''}
-                                                                </p>
-                                                            </div>
-                                                        </div>
-                                                        ${unreadCount > 0 ? `
-                                                            <span class="inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-startup-primary rounded-full">
-                                                                ${unreadCount}
-                                                            </span>
-                                                        ` : ''}
-                                                    </div>
-                                                </div>
-                                            `;
-                                        }).join('') : 
-                                        `<div class="p-4 text-center text-gray-500 dark:text-gray-400">No messages yet</div>`
-                                    }
-                                </div>
+                <div class="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
+                    <div class="grid grid-cols-1 md:grid-cols-3">
+                        <!-- Conversations List -->
+                        <div class="border-r border-gray-200 dark:border-gray-700">
+                            <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+                                <input type="text" 
+                                    id="search-conversations" 
+                                    placeholder="Search conversations..." 
+                                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-startup-primary focus:border-startup-primary dark:bg-gray-700 dark:text-white">
                             </div>
-
-                            <!-- Messages View -->
-                            <div class="col-span-2" id="messages-view">
-                                <div class="flex flex-col h-[600px]">
-                                    <!-- Initial state -->
-                                    <div class="flex-1 flex items-center justify-center text-gray-500 dark:text-gray-400">
-                                        <div class="text-center">
-                                            <i class="fas fa-comments text-5xl mb-4"></i>
-                                            <p>Select a conversation to view messages</p>
-                                        </div>
+                            <div class="overflow-y-auto h-[600px]" id="conversations-list">
+                                ${conversations.length > 0 ? 
+                                    conversations.map(conv => {
+                                        const user = conv.participants[0]; // The other participant
+                                        return `
+                                            <div class="conversation-item p-4 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer" data-conv-id="${conv._id}">
+                                                <div class="flex items-center justify-between">
+                                                    <div class="flex items-center">
+                                                        <div class="h-10 w-10 rounded-full bg-startup-primary text-white flex items-center justify-center">
+                                                            <span>${user?.name?.substring(0, 2).toUpperCase() || 'U'}</span>
+                                                        </div>
+                                                        <div class="ml-3">
+                                                            <p class="text-sm font-medium text-startup-dark dark:text-white">${user?.name || 'Unknown User'}</p>
+                                                            <p class="text-xs text-gray-500 dark:text-gray-400 truncate">
+                                                                ${conv.lastMessage?.content?.substring(0, 50) || ''}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                    ${conv.unreadCount > 0 ? `
+                                                        <span class="inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-startup-primary rounded-full">
+                                                            ${conv.unreadCount}
+                                                        </span>
+                                                    ` : ''}
+                                                </div>
+                                            </div>
+                                        `;
+                                    }).join('') : 
+                                    `<div class="p-4 text-center text-gray-500 dark:text-gray-400">No conversations yet</div>`
+                                }
+                            </div>
+                        </div>
+                        <!-- Messages View -->
+                        <div class="col-span-2" id="messages-view">
+                            <div class="flex flex-col h-[600px]">
+                                <div class="flex-1 flex items-center justify-center text-gray-500 dark:text-gray-400">
+                                    <div class="text-center">
+                                        <i class="fas fa-comments text-5xl mb-4"></i>
+                                        <p>Select a conversation to view messages</p>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
-            `;
+            </div>
+        `;
 
-            // Setup conversation click handlers
-            document.querySelectorAll('.conversation-item').forEach(item => {
-                item.addEventListener('click', async (e) => {
-                    // Remove active state from all conversations
-                    document.querySelectorAll('.conversation-item').forEach(i => {
-                        i.classList.remove('bg-gray-100', 'dark:bg-gray-700');
-                    });
-                    
-                    // Add active state to clicked conversation
-                    item.classList.add('bg-gray-100', 'dark:bg-gray-700');
-                    
-                    const userId = item.dataset.userId;
-                    const conversationMsgs = conversations[userId];
-                    
-                    // Sort messages by date
-                    conversationMsgs.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-                    
-                    // Update messages view
-                    const messagesView = document.getElementById('messages-view');
-                    messagesView.innerHTML = `
-                        <div class="flex flex-col h-full">
-                            <!-- Header -->
-                            <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center">
-                                <div class="h-10 w-10 rounded-full bg-startup-primary text-white flex items-center justify-center">
-                                    <span>${conversationMsgs[0].senderName?.substring(0, 2).toUpperCase() || 'U'}</span>
-                                </div>
-                                <div class="ml-3">
-                                    <p class="text-sm font-medium text-startup-dark dark:text-white">${conversationMsgs[0].senderName || 'Unknown User'}</p>
-                                    <p class="text-xs text-gray-500 dark:text-gray-400">
-                                        ${conversationMsgs[0].senderType || 'User'}
-                                    </p>
-                                </div>
-                            </div>
-                            
-                            <!-- Messages -->
-                            <div class="flex-1 overflow-y-auto p-4 space-y-4" id="messages-container">
-                                ${conversationMsgs.map(msg => `
-                                    <div class="flex ${msg.senderId === Auth.getCurrentUser()._id ? 'justify-end' : 'justify-start'}">
-                                        <div class="max-w-[70%] ${msg.senderId === Auth.getCurrentUser()._id ? 
-                                            'bg-startup-primary text-white' : 
-                                            'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
-                                        } rounded-lg px-4 py-2 shadow">
-                                            <p class="text-sm">${msg.content}</p>
-                                            <p class="text-xs opacity-75 mt-1">
-                                                ${new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                            </p>
-                                        </div>
-                                    </div>
-                                `).join('')}
-                            </div>
-                            
-                            <!-- Message Input -->
-                            <div class="p-4 border-t border-gray-200 dark:border-gray-700">
-                                <form id="message-form" class="flex space-x-4">
-                                    <input type="hidden" id="recipient-id" value="${userId}">
-                                    <input type="text" 
-                                        id="message-input" 
-                                        placeholder="Type your message..." 
-                                        class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-startup-primary focus:border-startup-primary dark:bg-gray-700 dark:text-white">
-                                    <button type="submit" class="px-4 py-2 bg-startup-primary text-white rounded-md hover:bg-opacity-90 disabled:opacity-50">
-                                        <i class="fas fa-paper-plane"></i>
-                                    </button>
-                                </form>
+        // Setup conversation click handlers
+        document.querySelectorAll('.conversation-item').forEach(item => {
+            item.addEventListener('click', async () => {
+                // Remove active state from all conversations
+                document.querySelectorAll('.conversation-item').forEach(i => {
+                    i.classList.remove('bg-gray-100', 'dark:bg-gray-700');
+                });
+                item.classList.add('bg-gray-100', 'dark:bg-gray-700');
+
+                const convId = item.dataset.convId;
+                await DashboardPage.loadMessagesForConversation(convId);
+            });
+        });
+
+    } catch (error) {
+        container.innerHTML = `
+            <div class="p-6">
+                <h2 class="text-2xl font-bold text-startup-dark dark:text-white mb-6">Messages</h2>
+                <div class="text-red-500">Failed to load messages: ${error.message}</div>
+            </div>
+        `;
+    }
+},
+
+// Add this helper method:
+loadMessagesForConversation: async function(conversationId) {
+    const messagesView = document.getElementById('messages-view');
+    if (!messagesView) return;
+
+    messagesView.innerHTML = `
+        <div class="flex-1 flex items-center justify-center text-gray-500 dark:text-gray-400">
+            <div class="text-center">
+                <div class="spinner mx-auto mb-4"></div>
+                <p>Loading conversation...</p>
+            </div>
+        </div>
+    `;
+
+    try {
+        const response = await API.getMessages(conversationId);
+        const messages = response.data || [];
+
+        messagesView.innerHTML = `
+            <div class="flex flex-col h-full">
+                <div class="flex-1 overflow-y-auto p-4 space-y-4" id="messages-container">
+                    ${messages.map(msg => `
+                        <div class="flex ${msg.sender._id === Auth.getCurrentUser()._id ? 'justify-end' : 'justify-start'}">
+                            <div class="max-w-[70%] ${msg.sender._id === Auth.getCurrentUser()._id ? 
+                                'bg-startup-primary text-white' : 
+                                'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
+                            } rounded-lg px-4 py-2 shadow">
+                                <p class="text-sm">${msg.content}</p>
+                                <p class="text-xs opacity-75 mt-1">
+                                    ${new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </p>
                             </div>
                         </div>
-                    `;
-
-                    // Scroll to bottom of messages
-                    const messagesContainer = document.getElementById('messages-container');
-                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
-
-                    // Setup message form
-                    const messageForm = document.getElementById('message-form');
-                    messageForm.addEventListener('submit', async (e) => {
-                        e.preventDefault();
-                        
-                        const input = document.getElementById('message-input');
-                        const recipientId = document.getElementById('recipient-id').value;
-                        const content = input.value.trim();
-                        
-                        if (!content) return;
-                        
-                        try {
-                            // Send message
-                            await API.sendMessage(recipientId, content);
-                            
-                            // Clear input
-                            input.value = '';
-                            
-                            // Refresh messages
-                            this.loadMessagesTabContent();
-                        } catch (error) {
-                            app.showToast(error.message || 'Failed to send message', 'error');
-                            console.error('Error sending message:', error);
-                        }
-                    });
-
-                    // Mark messages as read
-                    try {
-                        await API.markMessagesAsRead(userId);
-                    } catch (error) {
-                        console.error('Error marking messages as read:', error);
-                    }
-                });
-            });
-
-            // Setup search functionality
-            const searchInput = document.getElementById('search-conversations');
-            searchInput.addEventListener('input', (e) => {
-                const query = e.target.value.toLowerCase();
-                document.querySelectorAll('.conversation-item').forEach(item => {
-                    const name = item.querySelector('.text-sm').textContent.toLowerCase();
-                    const message = item.querySelector('.text-xs').textContent.toLowerCase();
-                    
-                    if (name.includes(query) || message.includes(query)) {
-                        item.style.display = 'block';
-                    } else {
-                        item.style.display = 'none';
-                    }
-                });
-            });
-        } catch (error) {
-            container.innerHTML = `
-                <div class="p-6">
-                    <h2 class="text-2xl font-bold text-startup-dark dark:text-white mb-6">Messages</h2>
-                    <div class="text-red-500">Failed to load messages: ${error.message}</div>
+                    `).join('')}
                 </div>
-            `;
-        }
-    },
+                <div class="p-4 border-t border-gray-200 dark:border-gray-700">
+                    <form id="message-form" class="flex space-x-4">
+                        <input type="text" id="message-input" placeholder="Type your message..." class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-startup-primary focus:border-startup-primary dark:bg-gray-700 dark:text-white">
+                        <button type="submit" class="px-4 py-2 bg-startup-primary text-white rounded-md hover:bg-opacity-90 disabled:opacity-50">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        `;
+
+        // Scroll to bottom
+        const messagesContainer = document.getElementById('messages-container');
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+        // Setup message form
+        const messageForm = document.getElementById('message-form');
+        messageForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const input = document.getElementById('message-input');
+            const content = input.value.trim();
+            if (!content) return;
+            input.value = '';
+            // Send message
+            try {
+                await API.createMessage({
+                    conversation: conversationId,
+                    receiver: messages.length > 0 ? (messages[0].sender._id === Auth.getCurrentUser()._id ? messages[0].receiver : messages[0].sender._id) : null,
+                    content
+                });
+                // Reload messages
+                await DashboardPage.loadMessagesForConversation(conversationId);
+            } catch (error) {
+                alert(error.message || 'Failed to send message');
+            }
+        });
+
+    } catch (error) {
+        messagesView.innerHTML = `<div class="text-red-500 p-4">Failed to load conversation: ${error.message}</div>`;
+    }
+},
 
     /**
      * Load connections tab content
@@ -2639,155 +2616,191 @@ setupMatchButtonListeners: function() {
  * Load connections tab content
  */
 loadConnectionsTabContent: async function() {
-     this.app = this.app || window.app; // Ensure app is defined
+    this.app = this.app || window.app; // Ensure app is defined
     const container = document.getElementById('connections-tab');
     if (!container) return;
 
     try {
-        // Log API responses for debugging
-        const [connections, requestsResponse] = await Promise.all([
-            API.getConnections().then(resp => {
-            console.log('Connections:', resp);
-            return resp || { data: [] };
-            }),
-            API.getConnectionRequests().then(resp => {
-            console.log('Connection Requests:', resp); 
-            // Extract request details including user names
-            return (resp.data || []).map(request => ({
-                ...request,
-                user: request.requester || request.recipient || 'Unknown'
-            }));
-            })
+        // Fetch connections and requests in parallel
+        const [connectionsResp, requestsResp] = await Promise.all([
+            API.getConnections(),
+            API.getConnectionRequests()
         ]);
+        const connections = connectionsResp?.data || [];
+        const requests = requestsResp?.data || [];
 
         // Get current user ID
         const currentUserId = Auth.getCurrentUser()._id;
 
         // Separate incoming and outgoing requests
-        const requests = requestsResponse;
         const incomingRequests = requests.filter(req => req.recipient === currentUserId);
         const outgoingRequests = requests.filter(req => req.sender === currentUserId);
 
-        // Update the markup
+        // Tab UI
         container.innerHTML = `
             <div class="p-6">
-                <!-- Tabs -->
-                <div class="flex justify-between items-center mb-6">
+                <div class="flex items-center justify-between mb-6">
                     <h2 class="text-2xl font-bold text-startup-dark dark:text-white">Connections</h2>
-                    <div class="flex space-x-4">
-                        <button id="connections-tab-btn" class="px-4 py-2 text-startup-primary border-b-2 border-startup-primary">
-                            Connections (${connections.data?.length || 0})
+                    <div class="flex space-x-2">
+                        <button id="connections-tab-btn" class="connections-tab-switch px-4 py-2 rounded-t-md font-medium focus:outline-none bg-white dark:bg-gray-800 border-b-2 border-startup-primary text-startup-primary shadow-sm">
+                            Connections <span class="ml-1 font-semibold">(${connections.length})</span>
                         </button>
-                        <button id="requests-tab-btn" class="px-4 py-2 text-gray-500 border-b-2 border-transparent hover:text-startup-primary">
-                            Requests (${requests.length})
-                            ${requests.length > 0 ? `
-                                <span class="ml-2 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-startup-primary rounded-full">
-                                    ${requests.length}
-                                </span>
-                            ` : ''}
+                        <button id="requests-tab-btn" class="connections-tab-switch px-4 py-2 rounded-t-md font-medium focus:outline-none bg-gray-100 dark:bg-gray-700 border-b-2 border-transparent text-gray-600 dark:text-gray-300 hover:text-startup-primary hover:bg-white dark:hover:bg-gray-800 shadow-sm relative">
+                            Requests <span class="ml-1 font-semibold">(${incomingRequests.length + outgoingRequests.length})</span>
+                            ${(incomingRequests.length > 0) ? `<span class="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">${incomingRequests.length}</span>` : ''}
                         </button>
                     </div>
                 </div>
-
-                <!-- Requests View -->
-                <div id="requests-view" class="space-y-6">
-                    ${requests.length > 0 ? `
-                        <!-- Incoming Requests -->
-                        ${incomingRequests.length > 0 ? `
-                            <div class="mb-8">
-                                <h3 class="text-lg font-semibold text-startup-dark dark:text-white mb-4">
-                                    Incoming Requests (${incomingRequests.length})
-                                </h3>
-                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                    ${incomingRequests.map(req => `
-                                        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-                                            <div class="flex items-center justify-between mb-4">
-                                                <div class="flex items-center">
-                                                    <div class="h-12 w-12 rounded-full bg-startup-primary text-white flex items-center justify-center text-xl font-bold">
-                                                        ${req.user?.charAt(0).toUpperCase() || 'U'}
-                                                    </div>
-                                                    <div class="ml-4">
-                                                        <h3 class="text-lg font-semibold text-startup-dark dark:text-white">
-                                                            ${req.user || 'Unknown User'}
-                                                        </h3>
-                                                        <p class="text-xs text-gray-400 mt-1">
-                                                            Received ${new Date(req.createdAt).toLocaleDateString()}
-                                                        </p>
-                                                    </div>
+                <div>
+                    <div id="connections-list-view">
+                        ${connections.length > 0 ? `
+                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                                ${connections.map(connection => {
+                                    const user = connection.user || {};
+                                    return `
+                                        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 flex flex-col">
+                                            <div class="flex items-center mb-4">
+                                                <div class="h-12 w-12 rounded-full bg-startup-primary text-white flex items-center justify-center text-xl font-bold">
+                                                    ${(user.name || 'U').charAt(0).toUpperCase()}
+                                                </div>
+                                                <div class="ml-4">
+                                                    <h3 class="text-lg font-semibold text-startup-dark dark:text-white">${user.name || 'Unknown User'}</h3>
+                                                    <p class="text-sm text-gray-500 dark:text-gray-400">${user.userType ? user.userType.charAt(0).toUpperCase() + user.userType.slice(1) : ''}</p>
                                                 </div>
                                             </div>
-                                            <div class="flex space-x-3">
-                                                <button class="flex-1 px-4 py-2 bg-startup-primary text-white rounded-md hover:bg-opacity-90 accept-request-btn"
-                                                        data-request-id="${req._id}">
-                                                    Accept
+                                            <div class="flex space-x-2 mt-auto">
+                                                <button class="flex-1 px-4 py-2 bg-startup-primary text-white rounded-md hover:bg-opacity-90 message-btn" data-user-id="${user._id}" data-user-name="${user.name || ''}">
+                                                    <i class="fas fa-comment-alt mr-1"></i> Message
                                                 </button>
-                                                <button class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 reject-request-btn"
-                                                        data-request-id="${req._id}">
-                                                    Decline
+                                                <button class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 remove-connection-btn" data-connection-id="${user._id}">
+                                                    <i class="fas fa-user-minus mr-1"></i> Remove
                                                 </button>
                                             </div>
                                         </div>
-                                    `).join('')}
-                                </div>
+                                    `;
+                                }).join('')}
                             </div>
-                        ` : ''}
-
-                        <!-- Outgoing Requests -->
-                        ${outgoingRequests.length > 0 ? `
-                            <div>
-                                <h3 class="text-lg font-semibold text-startup-dark dark:text-white mb-4">
-                                    Sent Requests (${outgoingRequests.length})
-                                </h3>
-                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                    ${outgoingRequests.map(req => `
-                                        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-                                            <div class="flex items-center justify-between mb-4">
-                                                <div class="flex items-center">
-                                                    <div class="h-12 w-12 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 flex items-center justify-center text-xl font-bold">
-                                                        ${req.user?.charAt(0).toUpperCase() || 'U'}
+                        ` : `
+                            <div class="text-center py-16">
+                                <div class="text-gray-400 text-5xl mb-4">
+                                    <i class="fas fa-user-friends"></i>
+                                </div>
+                                <h3 class="text-xl font-bold text-startup-dark dark:text-white mb-2">No connections yet</h3>
+                                <p class="text-gray-600 dark:text-gray-300">Start connecting with others to grow your network.</p>
+                            </div>
+                        `}
+                    </div>
+                    <div id="requests-list-view" class="hidden">
+                        ${(incomingRequests.length + outgoingRequests.length) > 0 ? `
+                            ${incomingRequests.length > 0 ? `
+                                <div class="mb-8">
+                                    <h3 class="text-lg font-semibold text-startup-dark dark:text-white mb-4">
+                                        Incoming Requests <span class="font-normal text-gray-500">(${incomingRequests.length})</span>
+                                    </h3>
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                                        ${incomingRequests.map(req => {
+                                            const fromUser = req.requester || req.senderUser || {};
+                                            return `
+                                                <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 flex flex-col">
+                                                    <div class="flex items-center mb-4">
+                                                        <div class="h-12 w-12 rounded-full bg-startup-primary text-white flex items-center justify-center text-xl font-bold">
+                                                            ${(fromUser.name || 'U').charAt(0).toUpperCase()}
+                                                        </div>
+                                                        <div class="ml-4">
+                                                            <h3 class="text-lg font-semibold text-startup-dark dark:text-white">${fromUser.name || 'Unknown User'}</h3>
+                                                            <p class="text-xs text-gray-400 mt-1">Received ${new Date(req.createdAt).toLocaleDateString()}</p>
+                                                        </div>
                                                     </div>
-                                                    <div class="ml-4">
-                                                        <h3 class="text-lg font-semibold text-startup-dark dark:text-white">
-                                                            ${req.user || 'Unknown User'}
-                                                        </h3>
-                                                        <p class="text-xs text-gray-400 mt-1">
-                                                            Sent ${new Date(req.createdAt).toLocaleDateString()}
-                                                        </p>
+                                                    <div class="flex space-x-2 mt-auto">
+                                                        <button class="flex-1 px-4 py-2 bg-startup-primary text-white rounded-md hover:bg-opacity-90 accept-request-btn" data-request-id="${req._id}">
+                                                            <i class="fas fa-check mr-1"></i> Accept
+                                                        </button>
+                                                        <button class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 reject-request-btn" data-request-id="${req._id}">
+                                                            <i class="fas fa-times mr-1"></i> Decline
+                                                        </button>
                                                     </div>
                                                 </div>
-                                                <button class="text-gray-400 hover:text-red-500 cancel-request-btn" 
-                                                        data-request-id="${req._id}"
-                                                        title="Cancel Request">
-                                                    <i class="fas fa-times"></i>
-                                                </button>
-                                            </div>
-                                        </div>
-                                    `).join('')}
+                                            `;
+                                        }).join('')}
+                                    </div>
                                 </div>
+                            ` : ''}
+                            ${outgoingRequests.length > 0 ? `
+                                <div>
+                                    <h3 class="text-lg font-semibold text-startup-dark dark:text-white mb-4">
+                                        Sent Requests <span class="font-normal text-gray-500">(${outgoingRequests.length})</span>
+                                    </h3>
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                                        ${outgoingRequests.map(req => {
+                                            const toUser = req.recipientUser || req.recipient || {};
+                                            return `
+                                                <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 flex flex-col">
+                                                    <div class="flex items-center mb-4">
+                                                        <div class="h-12 w-12 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 flex items-center justify-center text-xl font-bold">
+                                                            ${(toUser.name || 'U').charAt(0).toUpperCase()}
+                                                        </div>
+                                                        <div class="ml-4">
+                                                            <h3 class="text-lg font-semibold text-startup-dark dark:text-white">${toUser.name || 'Unknown User'}</h3>
+                                                            <p class="text-xs text-gray-400 mt-1">Sent ${new Date(req.createdAt).toLocaleDateString()}</p>
+                                                        </div>
+                                                        <button class="ml-auto text-gray-400 hover:text-red-500 cancel-request-btn" data-request-id="${req._id}" title="Cancel Request">
+                                                            <i class="fas fa-times"></i>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            `;
+                                        }).join('')}
+                                    </div>
+                                </div>
+                            ` : ''}
+                        ` : `
+                            <div class="text-center py-16">
+                                <div class="text-gray-400 text-5xl mb-4">
+                                    <i class="fas fa-user-plus"></i>
+                                </div>
+                                <h3 class="text-xl font-bold text-startup-dark dark:text-white mb-2">No pending requests</h3>
+                                <p class="text-gray-600 dark:text-gray-300">You don't have any connection requests.</p>
                             </div>
-                        ` : ''}
-                    ` : `
-                        <div class="text-center py-8">
-                            <div class="text-gray-400 text-5xl mb-4">
-                                <i class="fas fa-user-plus"></i>
-                            </div>
-                            <h3 class="text-xl font-bold text-startup-dark dark:text-white mb-2">No pending requests</h3>
-                            <p class="text-gray-600 dark:text-gray-300">You don't have any connection requests</p>
-                        </div>
-                    `}
+                        `}
+                    </div>
                 </div>
             </div>
         `;
 
-        // Setup event listeners
+        // Tab switching logic
+        const connectionsTabBtn = document.getElementById('connections-tab-btn');
+        const requestsTabBtn = document.getElementById('requests-tab-btn');
+        const connectionsListView = document.getElementById('connections-list-view');
+        const requestsListView = document.getElementById('requests-list-view');
+
+        if (connectionsTabBtn && requestsTabBtn && connectionsListView && requestsListView) {
+            connectionsTabBtn.addEventListener('click', () => {
+                connectionsTabBtn.classList.add('bg-white', 'dark:bg-gray-800', 'border-startup-primary', 'text-startup-primary');
+                connectionsTabBtn.classList.remove('bg-gray-100', 'dark:bg-gray-700', 'border-transparent', 'text-gray-600', 'dark:text-gray-300');
+                requestsTabBtn.classList.remove('bg-white', 'dark:bg-gray-800', 'border-startup-primary', 'text-startup-primary');
+                requestsTabBtn.classList.add('bg-gray-100', 'dark:bg-gray-700', 'border-transparent', 'text-gray-600', 'dark:text-gray-300');
+                connectionsListView.classList.remove('hidden');
+                requestsListView.classList.add('hidden');
+            });
+            requestsTabBtn.addEventListener('click', () => {
+                requestsTabBtn.classList.add('bg-white', 'dark:bg-gray-800', 'border-startup-primary', 'text-startup-primary');
+                requestsTabBtn.classList.remove('bg-gray-100', 'dark:bg-gray-700', 'border-transparent', 'text-gray-600', 'dark:text-gray-300');
+                connectionsTabBtn.classList.remove('bg-white', 'dark:bg-gray-800', 'border-startup-primary', 'text-startup-primary');
+                connectionsTabBtn.classList.add('bg-gray-100', 'dark:bg-gray-700', 'border-transparent', 'text-gray-600', 'dark:text-gray-300');
+                connectionsListView.classList.add('hidden');
+                requestsListView.classList.remove('hidden');
+            });
+        }
+
+        // Setup event listeners for actions
         this.setupConnectionsEventListeners();
 
     } catch (error) {
         console.error('Error loading connections:', error);
         container.innerHTML = `
             <div class="p-6">
-                <h2 class="text-2xl font-bold text-startup-dark dark:text-white mb-6">Network</h2>
-                <div class="text-center py-8">
+                <h2 class="text-2xl font-bold text-startup-dark dark:text-white mb-6">Connections</h2>
+                <div class="text-center py-16">
                     <div class="text-red-500 text-5xl mb-4">
                         <i class="fas fa-exclamation-circle"></i>
                     </div>
@@ -2801,6 +2814,9 @@ loadConnectionsTabContent: async function() {
                 </div>
             </div>
         `;
+        document.getElementById('retry-connections-btn')?.addEventListener('click', () => {
+            this.loadConnectionsTabContent();
+        });
     }
 },
 
@@ -3297,6 +3313,9 @@ removeConnection: async function(connectionId) {
     if (!container) return;
 
     // Show loading state
+
+    // Add a line chart container for Total Revenue (Funding Raised) over time
+    // This will be rendered below the main metrics cards
     container.innerHTML = `
         <div class="p-6">
             <h2 class="text-2xl font-bold text-startup-dark dark:text-white mb-6">Analytics</h2>
@@ -3308,127 +3327,114 @@ removeConnection: async function(connectionId) {
     `;
 
     try {
+        // Fetch analytics data (from profile or API)
         const user = Auth.getCurrentUser();
         let analytics = {};
         let isStartup = user.userType === 'startup';
 
-        // Fetch analytics data
-        const response = await API.getAnalytics();
-        // Support both { analytics: {...} } and { data: {...} }
-        analytics = response.analytics || response.data || {};
+        // Prefer profile.stats if available, else fallback to API
+        let profile = null;
+        if (isStartup) {
+            const resp = await API.getStartupByUserId(user._id);
+            profile = resp.startup;
+            analytics = profile.stats || {};
+            analytics.revenue = profile.fundingAmount || 0;
+        } else {
+            const resp = await API.getAnalytics();
+            analytics = resp.analytics || resp.data || {};
+        }
 
         // Fallbacks for missing fields
-        const profileViews = analytics.views ?? analytics.profileViews ?? 0;
+        const profileViews = analytics.profileViews ?? analytics.views ?? 0;
         const connections = analytics.connections ?? 0;
         const messages = analytics.messages ?? 0;
         const matchScore = analytics.matchScore ?? '-';
         const revenue = analytics.revenue ?? 0;
-        const users = analytics.users ?? 0;
-        const growth = analytics.growth ?? null;
-        const runway = analytics.runway ?? null;
 
         // Main metrics cards
         let cardsHtml = `
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-4 dashboard-card">
-                    <div class="flex items-center">
-                        <div class="flex-shrink-0 bg-startup-primary bg-opacity-10 rounded-full p-3">
-                            <i class="fas fa-eye text-startup-primary"></i>
-                        </div>
-                        <div class="ml-4">
-                            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Profile Views</p>
-                            <p class="text-2xl font-bold text-startup-dark dark:text-white">${profileViews}</p>
-                        </div>
-                    </div>
+            <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-4 dashboard-card">
+                <div class="flex items-center">
+                <div class="flex-shrink-0 bg-startup-primary bg-opacity-10 rounded-full p-3">
+                    <i class="fas fa-eye text-startup-primary"></i>
                 </div>
-                <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-4 dashboard-card">
-                    <div class="flex items-center">
-                        <div class="flex-shrink-0 bg-green-100 rounded-full p-3">
-                            <i class="fas fa-handshake text-green-600"></i>
-                        </div>
-                        <div class="ml-4">
-                            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Connections</p>
-                            <p class="text-2xl font-bold text-startup-dark dark:text-white">${connections}</p>
-                        </div>
-                    </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Profile Views</p>
+                    <p class="text-2xl font-bold text-startup-dark dark:text-white">${profileViews}</p>
                 </div>
-                <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-4 dashboard-card">
-                    <div class="flex items-center">
-                        <div class="flex-shrink-0 bg-blue-100 rounded-full p-3">
-                            <i class="fas fa-comment-alt text-blue-600"></i>
-                        </div>
-                        <div class="ml-4">
-                            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Messages</p>
-                            <p class="text-2xl font-bold text-startup-dark dark:text-white">${messages}</p>
-                        </div>
-                    </div>
                 </div>
+            </div>
+            <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-4 dashboard-card">
+                <div class="flex items-center">
+                <div class="flex-shrink-0 bg-green-100 rounded-full p-3">
+                    <i class="fas fa-handshake text-green-600"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Connections</p>
+                    <p class="text-2xl font-bold text-startup-dark dark:text-white">${connections}</p>
+                </div>
+                </div>
+            </div>
+            <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-4 dashboard-card">
+                <div class="flex items-center">
+                <div class="flex-shrink-0 bg-blue-100 rounded-full p-3">
+                    <i class="fas fa-comment-alt text-blue-600"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Messages</p>
+                    <p class="text-2xl font-bold text-startup-dark dark:text-white">${messages}</p>
+                </div>
+                </div>
+            </div>
+            <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-4 dashboard-card">
+                <div class="flex items-center">
+                <div class="flex-shrink-0 bg-yellow-100 rounded-full p-3">
+                    <i class="fas fa-star text-yellow-600"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Match Score</p>
+                    <p class="text-2xl font-bold text-startup-dark dark:text-white">${matchScore}/10</p>
+                </div>
+                </div>
+            </div>
+            </div>
+            <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-6 mb-8">
+            <h3 class="text-lg font-bold text-startup-dark dark:text-white mb-4">Total Revenue Raised Over Time</h3>
+            <canvas id="revenue-line-chart" height="120"></canvas>
+            </div>
+        `;
+
+        // Revenue card (using fundingAmount)
+        let revenueHtml = `
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                 <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-4 dashboard-card">
                     <div class="flex items-center">
-                        <div class="flex-shrink-0 bg-yellow-100 rounded-full p-3">
-                            <i class="fas fa-star text-yellow-600"></i>
+                        <div class="flex-shrink-0 bg-purple-100 rounded-full p-3">
+                            <i class="fas fa-dollar-sign text-purple-600"></i>
                         </div>
                         <div class="ml-4">
-                            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Match Score</p>
-                            <p class="text-2xl font-bold text-startup-dark dark:text-white">${matchScore}/10</p>
+                            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Revenue (Funding Raised)</p>
+                            <p class="text-2xl font-bold text-startup-dark dark:text-white">$${revenue.toLocaleString()}</p>
                         </div>
                     </div>
                 </div>
             </div>
         `;
 
-        // Extra metrics for startups (revenue, users, growth, runway)
-        let extraHtml = '';
-        if (isStartup) {
-            extraHtml = `
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                    <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-4 dashboard-card">
-                        <div class="flex items-center">
-                            <div class="flex-shrink-0 bg-purple-100 rounded-full p-3">
-                                <i class="fas fa-dollar-sign text-purple-600"></i>
-                            </div>
-                            <div class="ml-4">
-                                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Revenue</p>
-                                <p class="text-2xl font-bold text-startup-dark dark:text-white">$${revenue.toLocaleString()}</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-4 dashboard-card">
-                        <div class="flex items-center">
-                            <div class="flex-shrink-0 bg-pink-100 rounded-full p-3">
-                                <i class="fas fa-users text-pink-600"></i>
-                            </div>
-                            <div class="ml-4">
-                                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Active Users</p>
-                                <p class="text-2xl font-bold text-startup-dark dark:text-white">${users}</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-4 dashboard-card">
-                        <div class="flex items-center">
-                            <div class="flex-shrink-0 bg-indigo-100 rounded-full p-3">
-                                <i class="fas fa-chart-line text-indigo-600"></i>
-                            </div>
-                            <div class="ml-4">
-                                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Growth Rate</p>
-                                <p class="text-2xl font-bold text-startup-dark dark:text-white">${growth !== null ? growth + '%' : '-'}</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-4 dashboard-card">
-                        <div class="flex items-center">
-                            <div class="flex-shrink-0 bg-teal-100 rounded-full p-3">
-                                <i class="fas fa-hourglass-half text-teal-600"></i>
-                            </div>
-                            <div class="ml-4">
-                                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Runway</p>
-                                <p class="text-2xl font-bold text-startup-dark dark:text-white">${runway !== null ? runway + ' months' : '-'}</p>
-                            </div>
-                        </div>
-                    </div>
+        // Chart containers
+        let chartsHtml = `
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
+                <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+                    <h3 class="text-lg font-bold text-startup-dark dark:text-white mb-4">Engagement Overview</h3>
+                    <canvas id="engagement-bar-chart" height="300"></canvas>
                 </div>
-            `;
-        }
+                <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+                    <h3 class="text-lg font-bold text-startup-dark dark:text-white mb-4">Match Score</h3>
+                    <canvas id="match-doughnut-chart" height="120"></canvas>
+                </div>
+            </div>
+        `;
 
         // Overview section
         let overviewHtml = `
@@ -3439,12 +3445,7 @@ removeConnection: async function(connectionId) {
                     <li><i class="fas fa-handshake text-green-600 mr-2"></i> You have <span class="font-semibold">${connections}</span> connections.</li>
                     <li><i class="fas fa-comment-alt text-blue-600 mr-2"></i> You have exchanged <span class="font-semibold">${messages}</span> messages.</li>
                     <li><i class="fas fa-star text-yellow-600 mr-2"></i> Your current match score is <span class="font-semibold">${matchScore}/10</span>.</li>
-                    ${isStartup ? `
-                        <li><i class="fas fa-dollar-sign text-purple-600 mr-2"></i> Total revenue: <span class="font-semibold">$${revenue.toLocaleString()}</span></li>
-                        <li><i class="fas fa-users text-pink-600 mr-2"></i> Active users: <span class="font-semibold">${users}</span></li>
-                        <li><i class="fas fa-chart-line text-indigo-600 mr-2"></i> Growth rate: <span class="font-semibold">${growth !== null ? growth + '%' : '-'}</span></li>
-                        <li><i class="fas fa-hourglass-half text-teal-600 mr-2"></i> Runway: <span class="font-semibold">${runway !== null ? runway + ' months' : '-'}</span></li>
-                    ` : ''}
+                    <li><i class="fas fa-dollar-sign text-purple-600 mr-2"></i> Total revenue (funding raised): <span class="font-semibold">$${revenue.toLocaleString()}</span></li>
                 </ul>
             </div>
         `;
@@ -3454,10 +3455,135 @@ removeConnection: async function(connectionId) {
             <div class="p-6">
                 <h2 class="text-2xl font-bold text-startup-dark dark:text-white mb-6">Analytics</h2>
                 ${cardsHtml}
-                ${extraHtml}
+                ${revenueHtml}
+                ${chartsHtml}
                 ${overviewHtml}
             </div>
         `;
+
+        // --- Chart.js: Render charts ---
+        // Make sure Chart.js is loaded (add <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> in your HTML)
+
+        // Bar chart for engagement
+        const barCtx = document.getElementById('engagement-bar-chart').getContext('2d');
+        new Chart(barCtx, {
+            type: 'bar',
+            data: {
+                labels: ['Profile Views', 'Connections', 'Messages'],
+                datasets: [{
+                    label: 'Count',
+                    data: [profileViews, connections, messages],
+                    backgroundColor: [
+                        'rgba(99, 102, 241, 0.7)',
+                        'rgba(16, 185, 129, 0.7)',
+                        'rgba(59, 130, 246, 0.7)'
+                    ],
+                    borderRadius: 8
+                }]
+            },
+            options: {
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: { beginAtZero: true, ticks: { stepSize: 1 } }
+                }
+            }
+        });
+
+        // --- Revenue Line Chart ---
+        // Use dummy data if profile.revenueHistory is not available
+        let revenueLabels = [];
+        let revenueData = [];
+        if (profile && Array.isArray(profile.revenueHistory) && profile.revenueHistory.length > 0) {
+            // profile.revenueHistory should be [{date: '2023-01', amount: 10000}, ...]
+            revenueLabels = profile.revenueHistory.map(item => item.date);
+            revenueData = profile.revenueHistory.map(item => item.amount);
+        } else {
+            // Fallback: generate last 6 months with static/fake data
+            const now = new Date();
+            for (let i = 5; i >= 0; i--) {
+                const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+                revenueLabels.push(d.toLocaleString('default', { month: 'short', year: '2-digit' }));
+                // For demo, show a simple ramp up to current revenue
+                revenueData.push(Math.round(revenue * ((6 - i) / 6)));
+            }
+        }
+        const revenueLineCtx = document.getElementById('revenue-line-chart').getContext('2d');
+        new Chart(revenueLineCtx, {
+            type: 'line',
+            data: {
+                labels: revenueLabels,
+                datasets: [{
+                    label: 'Total Revenue (USD)',
+                    data: revenueData,
+                    fill: true,
+                    borderColor: 'rgba(99, 102, 241, 1)',
+                    backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                    tension: 0.3,
+                    pointRadius: 4,
+                    pointBackgroundColor: 'rgba(99, 102, 241, 1)'
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return '$' + value.toLocaleString();
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // Doughnut chart for match score
+        const doughnutCtx = document.getElementById('match-doughnut-chart').getContext('2d');
+        let matchValue = parseFloat(matchScore);
+        if (isNaN(matchValue)) matchValue = 0;
+        new Chart(doughnutCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Match Score', 'Remaining'],
+                datasets: [{
+                    data: [matchValue, 10 - matchValue],
+                    backgroundColor: [
+                        'rgba(251, 191, 36, 0.9)',
+                        'rgba(229, 231, 235, 0.5)'
+                    ],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                cutout: '70%',
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { enabled: false },
+                    // Show score in center
+                    beforeDraw: function(chart) {
+                        const width = chart.width,
+                            height = chart.height,
+                            ctx = chart.ctx;
+                        ctx.restore();
+                        const fontSize = (height / 114).toFixed(2);
+                        ctx.font = fontSize + "em sans-serif";
+                        ctx.textBaseline = "middle";
+                        const text = matchValue + "/10",
+                            textX = Math.round((width - ctx.measureText(text).width) / 2),
+                            textY = height / 2;
+                        ctx.fillText(text, textX, textY);
+                        ctx.save();
+                    }
+                }
+            }
+        });
+
     } catch (error) {
         container.innerHTML = `
             <div class="p-6">

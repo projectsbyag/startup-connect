@@ -592,15 +592,15 @@ const StartupsPage = {
         const connectBtn = document.getElementById('connect-with-startup-btn');
         if (connectBtn) {
             connectBtn.addEventListener('click', async (e) => {
-                const originalText = connectBtn.innerHTML; // Move inside event handler
-                
+                e.stopPropagation();
+                const originalText = connectBtn.innerHTML;
                 try {
-                    // Check if already connected or pending
-                    if (connectBtn.classList.contains('connected') || 
+                    // Prevent duplicate requests
+                    if (connectBtn.classList.contains('connected') ||
                         connectBtn.classList.contains('pending')) {
                         return;
                     }
-    
+
                     // Show loading state
                     connectBtn.innerHTML = `
                         <span class="spinner inline-block mr-2"></span>
@@ -610,27 +610,26 @@ const StartupsPage = {
                     try {
                         // Send connection request
                         await API.sendConnectionRequest(startup.userId);
-                        
+
                         // Show success message
                         this.app.showToast('Connection request sent!', 'success');
-                        
+
                         // Update button
                         connectBtn.innerHTML = `<i class="fas fa-check mr-2"></i> Request Sent`;
                         connectBtn.classList.remove('bg-startup-primary');
                         connectBtn.classList.add('bg-green-500', 'pending');
                         connectBtn.disabled = true;
                     } catch (error) {
-                        // Check if already connected
-                        if (error.message.includes('Connection request already exists') || 
-                            error.message.includes('users are already connected')) {
-                            // Update button to show existing connection
+                        // Already connected or pending
+                        if (error.message &&
+                            (error.message.includes('Connection request already exists') ||
+                             error.message.includes('users are already connected'))) {
                             connectBtn.innerHTML = `<i class="fas fa-check mr-2"></i> Connected`;
                             connectBtn.classList.remove('bg-startup-primary');
                             connectBtn.classList.add('bg-green-500', 'connected');
                             connectBtn.disabled = true;
                             this.app.showToast('Already connected with this startup', 'info');
                         } else {
-                            // Restore button for other errors
                             connectBtn.innerHTML = originalText;
                             connectBtn.disabled = false;
                             this.app.showToast(error.message || 'Failed to send connection request', 'error');
@@ -638,95 +637,85 @@ const StartupsPage = {
                         }
                     }
                 } catch (error) {
-                    // Restore button
                     connectBtn.innerHTML = originalText;
                     connectBtn.disabled = false;
-                    
-                    // Show error
                     this.app.showToast(error.message || 'Failed to send connection request', 'error');
                     console.error('Error sending connection request:', error);
                 }
             });
         }
-        
+
         // Contact startup button
         const contactBtn = document.getElementById('contact-startup-btn');
         if (contactBtn) {
             contactBtn.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                const originalText = contactBtn.innerHTML;
                 try {
-                    // Show loading state
-                    const originalText = contactBtn.innerHTML;
                     contactBtn.innerHTML = `
                         <span class="spinner inline-block mr-2"></span>
                         Starting conversation...
                     `;
                     contactBtn.disabled = true;
-                    
+
                     // Start conversation
-                    const conversation = await API.startConversation({
+                    await API.startConversation({
                         recipient: startup.userId,
                         message: `Hi! I'm interested in learning more about ${startup.name}.`
                     });
-                    
-                    // Show success message
-                    app.showToast('Conversation started!', 'success');
-                    
-                    // Close the modal
+
+                    this.app.showToast('Conversation started!', 'success');
                     document.getElementById('startup-details-modal').classList.add('hidden');
-                    
-                    // Navigate to dashboard messages
-                    app.navigateTo('dashboard');
-                    // Assuming dashboard has a way to open messages tab
-                    // This would need to be implemented in the dashboard page
+                    this.app.navigateTo('dashboard');
                 } catch (error) {
-                    // Restore button
                     contactBtn.innerHTML = originalText;
                     contactBtn.disabled = false;
-                    
-                    // Show error
-                    app.showToast(error.message || 'Failed to start conversation', 'error');
+                    this.app.showToast(error.message || 'Failed to start conversation', 'error');
                     console.error('Error starting conversation:', error);
                 }
             });
         }
-        
+
         // Save startup button
         const saveBtn = document.getElementById('save-startup-btn');
         if (saveBtn) {
             saveBtn.addEventListener('click', async (e) => {
+                e.stopPropagation();
                 try {
-                    // Toggle saved state
                     const isSaved = saveBtn.classList.contains('saved');
-                    
                     if (isSaved) {
-                        // Remove from saved
+                        // Remove from saved startups
                         await API.removeSavedStartup(startup._id);
-                        
-                        // Update button
                         saveBtn.innerHTML = `<i class="far fa-bookmark mr-2"></i> Save`;
                         saveBtn.classList.remove('saved', 'bg-startup-primary', 'text-white');
                         saveBtn.classList.add('border-startup-primary', 'text-startup-primary');
-                        
-                        app.showToast('Removed from saved startups', 'info');
+                        this.app.showToast('Removed from saved startups', 'info');
                     } else {
-                        // Add to saved
+                        // Save startup
                         await API.saveStartup(startup._id);
-                        
-                        // Update button
                         saveBtn.innerHTML = `<i class="fas fa-bookmark mr-2"></i> Saved`;
                         saveBtn.classList.add('saved', 'bg-startup-primary', 'text-white');
                         saveBtn.classList.remove('border-startup-primary', 'text-startup-primary');
-                        
-                        app.showToast('Added to saved startups', 'success');
+                        this.app.showToast('Added to saved startups', 'success');
                     }
                 } catch (error) {
-                    app.showToast(error.message || 'Failed to update saved startups', 'error');
+                    this.app.showToast(error.message || 'Failed to update saved startups', 'error');
                     console.error('Error updating saved startups:', error);
                 }
             });
         }
+
+        // Retry button in modal (if present)
+        const retryBtn = document.getElementById('retry-startup-details-btn');
+        if (retryBtn) {
+            retryBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const id = retryBtn.dataset.id;
+                this.showStartupDetails(id);
+            });
+        }
     },
-    
+
     /**
      * Sort startups list
      * @param {string} sortBy - Sort criteria

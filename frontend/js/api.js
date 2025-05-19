@@ -246,19 +246,38 @@ class ApiService {
     async getStartupByUserId(userId) {
         return this.get(`/startups/user/${userId}`);
     }
+    async updateStartup(startupId, startupData) {
+        // Ensure startupId is a string (extract _id if an object is passed)
+        const id = typeof startupId === 'object' && startupId !== null ? startupId._id : startupId;
+        return this.put(`/startups/${id}`, startupData);
+    }
     
     /**
      * Create or update startup profile
      * @param {Object} startupData - Startup profile data
      * @returns {Promise} - Created/updated startup data
      */
-    async saveStartupProfile(startupData) {
-        if (startupData._id) {
-            return this.put(`/startups/${startupData._id}`, startupData);
-        } else {
-            return this.post('/startups', startupData);
-        }
+
+    /**
+     * Create a new message
+     * @param {Object} messageData - Message data
+     * @returns {Promise} - Created message
+     */
+    async createMessage(messageData) {
+        return this.post('/messages', messageData);
     }
+async saveInvestor(investorId) {
+    return this.post('/investors/save-investor', { investorId });
+}
+async removeSavedInvestor(investorId) {
+    return this.post('/investors/remove-saved-investor', { investorId });
+}
+async saveStartup(startupId) {
+    return this.post('/startups/save-startup', { startupId });
+}
+async removeSavedStartup(startupId) {
+    return this.post('/startups/remove-saved-startup', { startupId });
+}
     
     /**
      * Upload startup document
@@ -432,18 +451,14 @@ class ApiService {
  * @param {string} investorId - Investor ID to save
  * @returns {Promise} - Success message
  */
-async saveInvestor(investorId) {
-    return this.post('/investors/save', { investorId });
-}
+
 
 /**
  * Remove an investor from user's saved list
  * @param {string} investorId - Investor ID to remove
  * @returns {Promise} - Success message
  */
-async removeSavedInvestor(investorId) {
-    return this.delete(`/investors/save/${investorId}`);
-}
+
 
 async getPortfolio() {
     return this.get('/investors/user/portfolio');

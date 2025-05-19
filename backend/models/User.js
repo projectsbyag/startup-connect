@@ -51,6 +51,8 @@ const UserSchema = new mongoose.Schema({
         type: Boolean,
         default: false
     },
+    savedInvestors: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Investor' }],
+savedStartups: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Startup' }],
     twoFactorSecret: {
         type: String,
         select: false

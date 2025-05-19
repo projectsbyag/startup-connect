@@ -592,103 +592,151 @@ const InvestorsPage = {
      * @param {Object} investor - Investor data
      */
     /**
- * Attach event listeners to investor details modal
- * @param {Object} investor - Investor data
- */
+     * Attach event listeners to investor details modal
+     * @param {Object} investor - Investor data
+     */
     attachInvestorDetailsListeners: function(investor) {
-        // Get elements
-        const connectBtn = document.querySelector('#connect-with-investor-btn');
-        const contactBtn = document.querySelector('#contact-investor-btn');
-        const saveBtn = document.querySelector('#save-investor-btn');
-        const modal = document.querySelector('#investor-details-modal');
-    
-        if (contactBtn) {
-            const originalBtnText = contactBtn.textContent;
-            contactBtn.addEventListener('click', async () => {
+        // Connect with investor button
+        const connectBtn = document.getElementById('connect-with-investor-btn');
+        if (connectBtn) {
+            connectBtn.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                const originalText = connectBtn.innerHTML;
                 try {
-                    contactBtn.disabled = true;
-                    contactBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Starting chat...';
-    
-                    // Create conversation with the investor
-                    const response = await API.startConversation({
-                        recipient: investor.userId, // Use investor._id instead of userId
-                        message: `Hi, I'm interested in connecting about investment opportunities.`
-                    });
-    
-                    // Close the modal
-                    // Navigate to dashboard messages using the app instance passed to setupEventListeners
-                    if (this.app) {
-                        this.app.navigate('dashboard');
-                        setTimeout(() => {
-                            const messagesTab = document.querySelector('[data-tab="messages"]');
-                            if (messagesTab) {
-                                messagesTab.click();
-                                setTimeout(() => {
-                                    // Find and click the new conversation
-                                    const conversationItem = document.querySelector(
-                                        `.conversation-item[data-user-id="${investor._id}"]`
-                                    );
-                                    if (conversationItem) {
-                                        conversationItem.click();
-                                    }
-                                }, 500);
-                            }
-                        }, 500);
-                        
-                        this.app.showToast('Chat started successfully', 'success');
+                    // Prevent duplicate requests
+                    if (connectBtn.classList.contains('connected') ||
+                        connectBtn.classList.contains('pending')) {
+                        return;
                     }
-    
-                    window.app?.showToast('Chat started successfully', 'success');
+
+                    // Show loading state
+                    connectBtn.innerHTML = `
+                        <span class="spinner inline-block mr-2"></span>
+                        Connecting...
+                    `;
+                    connectBtn.disabled = true;
+                    try {
+                        // Send connection request
+                        await API.sendConnectionRequest(investor.userId || investor._id);
+
+                        // Show success message
+                        this.app.showToast('Connection request sent!', 'success');
+
+                        // Update button
+                        connectBtn.innerHTML = `<i class="fas fa-check mr-2"></i> Request Sent`;
+                        connectBtn.classList.remove('bg-startup-primary');
+                        connectBtn.classList.add('bg-green-500', 'pending');
+                        connectBtn.disabled = true;
+                    } catch (error) {
+                        // Already connected or pending
+                        if (error.message &&
+                            (error.message.includes('Connection request already exists') ||
+                             error.message.includes('users are already connected'))) {
+                            connectBtn.innerHTML = `<i class="fas fa-check mr-2"></i> Connected`;
+                            connectBtn.classList.remove('bg-startup-primary');
+                            connectBtn.classList.add('bg-green-500', 'connected');
+                            connectBtn.disabled = true;
+                            this.app.showToast('Already connected with this investor', 'info');
+                        } else {
+                            connectBtn.innerHTML = originalText;
+                            connectBtn.disabled = false;
+                            this.app.showToast(error.message || 'Failed to send connection request', 'error');
+                            console.error('Error sending connection request:', error);
+                        }
+                    }
                 } catch (error) {
-                    contactBtn.disabled = false;
-                    contactBtn.innerHTML = originalBtnText;
-                    window.app?.showToast(error.message || 'Failed to start conversation', 'error');
-                    console.error('Failed to start conversation:', error);
+                    connectBtn.innerHTML = originalText;
+                    connectBtn.disabled = false;
+                    this.app.showToast(error.message || 'Failed to send connection request', 'error');
+                    console.error('Error sending connection request:', error);
                 }
             });
         }
-    
-    
-    if (saveBtn) {
-        saveBtn.addEventListener('click', async () => {
-            try {
-                const isSaved = saveBtn.classList.contains('saved');
-                saveBtn.disabled = true;
-                
-                if (isSaved) {
-                    await API.removeSavedInvestor(investor._id);
-                    saveBtn.innerHTML = '<i class="far fa-bookmark mr-2"></i> Save';
-                    saveBtn.classList.remove('saved', 'bg-startup-primary', 'text-white');
-                    saveBtn.classList.add('border-startup-primary', 'text-startup-primary');
-                    window.app?.showToast('Removed from saved investors', 'success');
-                } else {
-                    await API.saveInvestor(investor._id);
-                    saveBtn.innerHTML = '<i class="fas fa-bookmark mr-2"></i> Saved';
-                    saveBtn.classList.add('saved', 'bg-startup-primary', 'text-white');
-                    saveBtn.classList.remove('border-startup-primary', 'text-startup-primary');
-                    window.app?.showToast('Added to saved investors', 'success');
-                }
-            } catch (error) {
-                window.app?.showToast(error.message || 'Failed to update saved status', 'error');
-                console.error('Failed to update saved status:', error);
-            } finally {
-                saveBtn.disabled = false;
-            }
-        });
-    }
 
-    // Close modal button
-    const closeBtn = document.querySelector('#close-investor-details-btn');
-    if (closeBtn && modal) {
-        closeBtn.addEventListener('click', () => modal.classList.add('hidden'));
-        
-        // Close on outside click
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) modal.classList.add('hidden');
-        });
-    }
-},
-    
+        // Contact investor button
+        const contactBtn = document.getElementById('contact-investor-btn');
+        if (contactBtn) {
+            contactBtn.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                const originalText = contactBtn.innerHTML;
+                try {
+                    contactBtn.innerHTML = `
+                        <span class="spinner inline-block mr-2"></span>
+                        Starting conversation...
+                    `;
+                    contactBtn.disabled = true;
+
+                    // Start conversation
+                    await API.startConversation({
+                        recipient: investor.userId || investor._id,
+                        message: `Hi! I'm interested in connecting with ${investor.firm || investor.name}.`
+                    });
+
+                    this.app.showToast('Conversation started!', 'success');
+                    // Hide the modal
+                    document.getElementById('investor-details-modal').classList.add('hidden');
+
+                    // Go to the conversation page for this investor
+                    try {
+                        // Get the conversation ID for this investor (API should return it or you may need to fetch it)
+                        const conversation = await API.getConversationWithUser(investor.userId || investor._id);
+                        if (conversation && conversation._id) {
+                            this.app.navigateTo(`conversations/${conversation._id}`);
+                        } else {
+                            // fallback: go to dashboard if conversation not found
+                            this.app.navigateTo('messages');
+                        }
+                    } catch (err) {
+                        // fallback: go to dashboard if error
+                        this.app.navigateTo('dashboard');
+                    }
+                    this.app.navigateTo('dashboard');
+                } catch (error) {
+                    contactBtn.innerHTML = originalText;
+                    contactBtn.disabled = false;
+                    this.app.showToast(error.message || 'Failed to start conversation', 'error');
+                    console.error('Error starting conversation:', error);
+                }
+            });
+        }
+
+        // Save investor button
+        const saveBtn = document.getElementById('save-investor-btn');
+        if (saveBtn) {
+            saveBtn.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                try {
+                    const isSaved = saveBtn.classList.contains('saved');
+                    if (isSaved) {
+                        await API.removeSavedInvestor(investor._id);
+                        saveBtn.innerHTML = `<i class="far fa-bookmark mr-2"></i> Save`;
+                        saveBtn.classList.remove('saved', 'bg-startup-primary', 'text-white');
+                        saveBtn.classList.add('border-startup-primary', 'text-startup-primary');
+                        this.app.showToast('Removed from saved investors', 'info');
+                    } else {
+                        await API.saveInvestor(investor._id);
+                        saveBtn.innerHTML = `<i class="fas fa-bookmark mr-2"></i> Saved`;
+                        saveBtn.classList.add('saved', 'bg-startup-primary', 'text-white');
+                        saveBtn.classList.remove('border-startup-primary', 'text-startup-primary');
+                        this.app.showToast('Added to saved investors', 'success');
+                    }
+                } catch (error) {
+                    this.app.showToast(error.message || 'Failed to update saved investors', 'error');
+                    console.error('Error updating saved investors:', error);
+                }
+            });
+        }
+
+        // Retry button in modal (if present)
+        const retryBtn = document.getElementById('retry-investor-details-btn');
+        if (retryBtn) {
+            retryBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const id = retryBtn.dataset.id;
+                this.showInvestorDetails(id);
+            });
+        }
+    },
     /**
      * Sort investors list
      * @param {string} sortBy - Sort criteria

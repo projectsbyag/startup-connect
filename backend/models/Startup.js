@@ -34,6 +34,12 @@ const StartupSchema = new mongoose.Schema({
             'Other'
         ]
     },
+    revenueHistory: [
+    {
+        date: { type: String, required: true }, // e.g., '2024-01'
+        amount: { type: Number, required: true }
+    }
+],
     funding: {
         type: String,
         required: [true, 'Please select a funding stage'],

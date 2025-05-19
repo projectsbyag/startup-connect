@@ -1,6 +1,8 @@
 const Startup = require('../models/Startup.js');
 const User = require('../models/User.js');
 const Investor = require('../models/Investor.js');
+const Message = require('../models/Message.js');
+const Conversation = require('../models/Conversation.js');
 const Connection = require('../models/Connection.js');
 // @desc    Get all startups
 // @route   GET /api/startups
@@ -71,6 +73,7 @@ exports.getStartups = async (req, res, next) => {
 // @desc    Get single startup
 // @route   GET /api/startups/:id
 // @access  Public
+
 exports.getStartup = async (req, res, next) => {
     try {
         const startup = await Startup.findById(req.params.startupId);
@@ -105,26 +108,47 @@ exports.getStartup = async (req, res, next) => {
 exports.getStartupByUserId = async (req, res, next) => {
     try {
         const userId = req.params.userId || req.user.id;
-        
         const startup = await Startup.findOne({ userId });
-        
+
         if (!startup) {
             return res.status(404).json({
                 success: false,
                 message: 'Startup profile not found'
             });
         }
-        
+
+        // --- Stats calculation ---
+        const profileViews = startup.views || 0;
+        const connections = await Connection.countDocuments({
+                    status: 'accepted',
+                    $or: [
+                        { requester: startup.userId },
+                        { recipient: startup.userId }
+                    ]
+                });
+        const conversations = await Conversation.find({ participants: userId });
+        const conversationIds = conversations.map(c => c._id);
+        const messages = await Message.countDocuments({ conversation: { $in: conversationIds } });
+        const matchScore = startup.matchScore || '-';
+
         res.status(200).json({
             success: true,
-            startup
+            startup: {
+                ...startup.toObject(),
+                stats: {
+                    profileViews,
+                    connections,
+                    messages,
+                    matchScore
+                },
+                revenueHistory: startup.revenueHistory || []
+            
+            }
         });
-        
     } catch (error) {
         next(error);
     }
 };
-
 // @desc    Create new startup
 // @route   POST /api/startups
 // @access  Private
@@ -168,15 +192,17 @@ exports.createStartup = async (req, res, next) => {
 // @access  Private
 exports.updateStartup = async (req, res, next) => {
     try {
-        let startup = await Startup.findById(req.params.id);
-        
+        // Support both :id and :startupId as route params for compatibility
+        const startupId = req.params.id || req.params.startupId;
+        let startup = await Startup.findById(startupId);
+
         if (!startup) {
             return res.status(404).json({
                 success: false,
                 message: 'Startup not found'
             });
         }
-        
+
         // Make sure user owns the startup profile
         if (startup.userId.toString() !== req.user.id && req.user.userType !== 'admin') {
             return res.status(403).json({
@@ -184,23 +210,36 @@ exports.updateStartup = async (req, res, next) => {
                 message: 'Not authorized to update this startup profile'
             });
         }
-        
+        // If fundingAmount is being updated, record it in revenueHistory
+        if (
+            req.body.fundingAmount !== undefined &&
+            req.body.fundingAmount !== startup.fundingAmount
+        ) {
+            // Use current month/year as date string (e.g., '2024-05')
+            const now = new Date();
+            const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+            startup.revenueHistory.push({
+                date: dateStr,
+                amount: req.body.fundingAmount
+            });
+        }
+
         // Update startup
-        startup = await Startup.findByIdAndUpdate(req.params.id, req.body, {
+        startup = await Startup.findByIdAndUpdate(startupId, req.body, {
             new: true,
             runValidators: true
         });
-        
+            
+
         res.status(200).json({
             success: true,
             data: startup
         });
-        
+
     } catch (error) {
         next(error);
     }
 };
-
 // @desc    Delete startup
 // @route   DELETE /api/startups/:id
 // @access  Private
@@ -510,4 +549,37 @@ exports.getStartupAnalytics = async (req, res, next) => {
     } catch (error) {
         next(error);
     }
+};
+
+
+exports.saveStartup = async (req, res, next) => {
+    try {
+        const user = await User.findById(req.user.id);
+        if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+
+        // Check if the startup exists
+        const startup = await Startup.findById(req.body.startupId);
+        if (!startup) return res.status(404).json({ success: false, message: 'Startup profile not found' });
+
+        if (!user.savedStartups) user.savedStartups = [];
+        if (!user.savedStartups.includes(req.body.startupId)) {
+            user.savedStartups.push(req.body.startupId);
+            await user.save();
+        }
+
+        res.json({ success: true, message: 'Startup saved' });
+    } catch (error) {
+        next(error);
+    }
+};
+exports.removeSavedStartup = async (req, res, next) => {
+    try {
+        const user = await User.findById(req.user.id);
+        if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+
+        if (!user.savedStartups) user.savedStartups = [];
+        user.savedStartups = user.savedStartups.filter(id => id.toString() !== req.body.startupId);
+        await user.save();
+        res.json({ success: true, message: 'Investor removed from saved' });
+    } catch (error) { next(error); }
 };
