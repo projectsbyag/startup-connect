@@ -56,14 +56,14 @@ html {
 /* Toast notification */
 .toast {
     position: fixed;
-    top: 20px;
+    bottom: 20px;        /* Changed from top to bottom */
     right: 20px;
     padding: 12px 20px;
     border-radius: 4px;
     color: white;
     z-index: 9999;
     opacity: 0;
-    transform: translateY(-20px);
+    transform: translateY(20px); /* Adjust animation direction */
     transition: opacity 0.3s, transform 0.3s;
 }
 

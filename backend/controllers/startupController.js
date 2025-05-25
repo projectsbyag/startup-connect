@@ -152,16 +152,30 @@ exports.getStartupByUserId = async (req, res, next) => {
 // @desc    Create new startup
 // @route   POST /api/startups
 // @access  Private
-exports.createStartup = async (req, res, next) => {
+
+exports.getCurrentStartup = async (req, res, next) => {
     try {
-        // Check if user is a startup
-        if (req.user.userType !== 'startup') {
-            return res.status(403).json({
+        const startup = await Startup.findOne({ userId: req.user.id });
+        
+        if (!startup) {
+            return res.status(404).json({
                 success: false,
-                message: 'Only startup accounts can create startup profiles'
+                message: 'No startup profile found'
             });
         }
-        
+
+        res.status(200).json({
+            success: true,
+            startup: startup
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+
+exports.createStartup = async (req, res, next) => {
+    try {
         // Check if user already has a startup profile
         const existingStartup = await Startup.findOne({ userId: req.user.id });
         
@@ -171,29 +185,47 @@ exports.createStartup = async (req, res, next) => {
                 message: 'User already has a startup profile'
             });
         }
-        
+
         // Create startup profile
-        req.body.userId = req.user.id;
-        
-        const startup = await Startup.create(req.body);
-        
+        const startup = await Startup.create({
+            userId: req.user.id,
+            name: req.body.name,
+            description: req.body.description,
+            industry: req.body.industry,
+            funding: req.body.funding,
+            fundingAmount: req.body.fundingAmount || 0,
+            employees: req.body.employees || 1,
+            founded: req.body.founded,
+            location: req.body.location,
+            pitch: req.body.pitch
+        });
+
         res.status(201).json({
             success: true,
-            data: startup
+            startup: startup
         });
-        
+
     } catch (error) {
+        // Log the actual error for debugging
+        console.error('Startup creation error:', error);
+        
+        // Send appropriate error response
+        if (error.name === 'ValidationError') {
+            return res.status(400).json({
+                success: false,
+                message: Object.values(error.errors).map(err => err.message).join(', ')
+            });
+        }
+        
         next(error);
     }
 };
-
 // @desc    Update startup
 // @route   PUT /api/startups/:id
 // @access  Private
 exports.updateStartup = async (req, res, next) => {
     try {
-        // Support both :id and :startupId as route params for compatibility
-        const startupId = req.params.id || req.params.startupId;
+        const startupId = req.params.startupId;
         let startup = await Startup.findById(startupId);
 
         if (!startup) {
@@ -210,37 +242,35 @@ exports.updateStartup = async (req, res, next) => {
                 message: 'Not authorized to update this startup profile'
             });
         }
-        // If fundingAmount is being updated, record it in revenueHistory
-        if (
-            req.body.fundingAmount !== undefined &&
-            req.body.fundingAmount !== startup.fundingAmount
-        ) {
-            // Use current month/year as date string (e.g., '2024-05')
+
+        // Handle funding amount history
+        if (req.body.fundingAmount !== undefined && 
+            req.body.fundingAmount !== startup.fundingAmount) {
             const now = new Date();
             const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+            if (!startup.revenueHistory) startup.revenueHistory = [];
             startup.revenueHistory.push({
                 date: dateStr,
                 amount: req.body.fundingAmount
             });
         }
 
-        // Update startup
-        startup = await Startup.findByIdAndUpdate(startupId, req.body, {
-            new: true,
-            runValidators: true
-        });
-            
+        // Update startup with new data
+        startup = await Startup.findByIdAndUpdate(
+            startupId,
+            { ...req.body, updatedAt: Date.now() },
+            { new: true, runValidators: true }
+        );
 
         res.status(200).json({
             success: true,
-            data: startup
+            startup: startup
         });
 
     } catch (error) {
         next(error);
     }
-};
-// @desc    Delete startup
+};// @desc    Delete startup
 // @route   DELETE /api/startups/:id
 // @access  Private
 exports.deleteStartup = async (req, res, next) => {

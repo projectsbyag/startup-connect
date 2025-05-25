@@ -152,11 +152,13 @@ class App {
         document.getElementById('logout-link')?.addEventListener('click', (e) => {
             e.preventDefault();
             this.logout();
+            document.getElementById('user-dropdown-menu').classList.add('hidden');
         });
         
         document.getElementById('mobile-logout-link')?.addEventListener('click', (e) => {
             e.preventDefault();
             this.logout();
+            document.getElementById('user-dropdown-menu').classList.add('hidden');
         });
         
         // User menu navigation
@@ -222,6 +224,7 @@ class App {
             
             // Hide auth buttons and show user menu
             document.getElementById('auth-buttons').classList.add('hidden');
+            
             document.getElementById('user-menu-container').classList.remove('hidden');
             document.getElementById('mobile-auth-buttons')?.classList.add('hidden');
             document.getElementById('mobile-user-menu')?.classList.remove('hidden');
@@ -278,6 +281,7 @@ class App {
             // Close modal
             document.getElementById('signup-modal').classList.add('hidden');
             
+            
             // Show success message
             this.showToast('Account created successfully!', 'success');
             
@@ -305,6 +309,11 @@ class App {
         
         // Navigate to home
         this.navigateTo('home');
+        document.getElementById('login-btn').classList.remove('hidden');
+        document.getElementById('signup-btn').classList.remove('hidden');
+        document.getElementById('user-menu-button').classList.add('hidden');
+        document.getElementById('user-menu-container').classList.add('hidden');
+        document.getElementById('user-dropdown-menu')?.classList.remove('hidden');
     }
     
     /**
@@ -332,7 +341,9 @@ class App {
         if (isAuthenticated && user) {
             // Hide auth buttons, show user menu
             document.getElementById('auth-buttons').classList.add('hidden');
-            document.getElementById('user-menu-container').classList.remove('hidden');
+            document.getElementById('user-menu-button').classList.remove('hidden');
+            document.getElementById('login-btn').classList.add('hidden');
+            document.getElementById('signup-btn').classList.add('hidden');
             
             // Mobile menu
             document.getElementById('mobile-auth-buttons')?.classList.add('hidden');
@@ -350,7 +361,7 @@ class App {
         } else {
             // Show auth buttons, hide user menu
             document.getElementById('auth-buttons').classList.remove('hidden');
-            document.getElementById('user-menu-container').classList.add('hidden');
+            document.getElementById('user-menu-button').classList.add('hidden');
             
             // Mobile menu
             document.getElementById('mobile-auth-buttons')?.classList.remove('hidden');

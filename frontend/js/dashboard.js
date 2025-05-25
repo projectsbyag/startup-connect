@@ -1027,13 +1027,15 @@ const DashboardPage = {
                 if (startupProfile) {
                     // Profile exists, show dashboard content
                     document.getElementById('dashboard-content').innerHTML = this.renderStartupDashboardContent(startupProfile);
+                    document.getElementById('dashboard-loading').classList.add('hidden');
                     document.getElementById('dashboard-content').classList.remove('hidden');
-                    
                     // Setup dashboard tab navigation
+                    
+                    this.setupStartupDashboardEventListeners(app, startupProfile);
                     this.setupDashboardTabs(app);
                     
                     // Setup dashboard-specific event listeners
-                    this.setupStartupDashboardEventListeners(app, startupProfile);
+                
                 } else {
                     // Profile doesn't exist, show completion form
                     document.getElementById('profile-completion').classList.remove('hidden');
@@ -1089,18 +1091,31 @@ const DashboardPage = {
      * @returns {Promise<Object|null>} - Startup profile or null if not found
      */
     loadStartupProfile: async function(user) {
-        try {
-            // First check if user has a startup profile
-            const response = await API.getStartupByUserId(user._id);
+    try {
+        // First check if user has a startup profile
+        const response = await API.getStartupByUserId(user._id);
+        
+        // Check if we got a valid response with startup data
+        if (response?.success && response?.startup) {
             return response.startup;
-        } catch (error) {
-            // If 404, profile doesn't exist yet
-            if (error.message && error.message.includes('not found')) {
-                return null;
-            }
-            throw error;
         }
-    },
+
+        // If no startup found, show profile completion form
+        document.getElementById('dashboard-loading')?.classList.add('hidden');
+        document.getElementById('dashboard-content')?.classList.add('hidden');
+        document.getElementById('profile-completion')?.classList.remove('hidden');
+        return null;
+    } catch (error) {
+        // If profile doesn't exist yet, show completion form
+        if (error.message && error.message.includes('not found')) {
+            document.getElementById('dashboard-loading')?.classList.add('hidden');
+            document.getElementById('dashboard-content')?.classList.add('hidden');
+            document.getElementById('profile-completion')?.classList.remove('hidden');
+            return null;
+        }
+        throw error;
+    }
+},
     
     /**
      * Load investor profile
@@ -1133,17 +1148,17 @@ const DashboardPage = {
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             
-            // Get form data
-            const startupName = document.getElementById('startup-name').value.trim();
-            const description = document.getElementById('startup-description').value.trim();
-            const industry = document.getElementById('startup-industry').value;
-            const fundingStage = document.getElementById('funding-stage').value;
-            const fundingAmount = parseFloat(document.getElementById('funding-amount').value);
-            const teamSize = parseInt(document.getElementById('team-size').value);
-            const foundedYear = parseInt(document.getElementById('founded-year').value);
-            const location = document.getElementById('location').value.trim();
-            const pitch = document.getElementById('pitch').value.trim();
-            
+            const startupData = {
+            name: document.getElementById('startup-name').value.trim(),
+            description: document.getElementById('startup-description').value.trim(),
+            industry: document.getElementById('startup-industry').value,
+            funding: document.getElementById('funding-stage').value,
+            fundingAmount: parseFloat(document.getElementById('funding-amount').value) || 0,
+            employees: parseInt(document.getElementById('team-size').value) || 1,
+            founded: document.getElementById('founded-year').value.toString(),
+            location: document.getElementById('location').value.trim(),
+            pitch: document.getElementById('pitch').value.trim()
+        };
             // Show loading state
             const btnText = document.getElementById('complete-profile-btn-text');
             const btnSpinner = document.getElementById('complete-profile-spinner');
@@ -1152,37 +1167,27 @@ const DashboardPage = {
             btnText.textContent = 'Creating profile...';
             btnSpinner.classList.remove('hidden');
             submitBtn.disabled = true;
+        
+           try {
+            // Create startup profile
+            const startupProfile = await API.createStartup(startupData);
             
-            try {
-                // Create startup profile
-                const startupProfile = await API.updateStartup({
-                    name: startupName,
-                    description: description,
-                    industry: industry,
-                    funding: fundingStage,
-                    fundingAmount: fundingAmount,
-                    employees: teamSize,
-                    founded: foundedYear.toString(),
-                    location: location,
-                    pitch: pitch
-                });
-                
-                // Show success message
-                app.showToast('Startup profile created successfully!', 'success');
-                
-                // Reload dashboard content
-                this.loadDashboardContent(app);
-                
-            } catch (error) {
-                // Show error
-                app.showToast(error.message || 'Failed to create startup profile', 'error');
-                console.error('Error creating startup profile:', error);
-                
-                // Reset button state
-                btnText.textContent = 'Complete Profile';
-                btnSpinner.classList.add('hidden');
-                submitBtn.disabled = false;
-            }
+            // Show success message
+            app.showToast('Startup profile created successfully!', 'success');
+            
+            // Reload dashboard content
+            this.loadDashboardContent(app);
+            
+        } catch (error) {
+            // Show error
+            app.showToast(error.message || 'Failed to create startup profile', 'error');
+            console.error('Error creating startup profile:', error);
+            
+            // Reset button state
+            btnText.textContent = 'Complete Profile';
+            btnSpinner.classList.add('hidden');
+            submitBtn.disabled = false;
+        }
         });
     },
     
@@ -1558,87 +1563,56 @@ const DashboardPage = {
             const saveBtn = document.getElementById('save-startup-profile-btn');
             
             if (form && saveBtn) {
-                saveBtn.addEventListener('click', async () => {
-                    // Show loading state
-                    const btnText = document.getElementById('save-startup-profile-btn-text');
-                    const btnSpinner = document.getElementById('save-startup-profile-spinner');
-                    
-                    btnText.textContent = 'Saving...';
-                    btnSpinner.classList.remove('hidden');
-                    saveBtn.disabled = true;
-                    
-                    try {
-                        // Get form data
-                        const startupId = document.getElementById('startup-id').value;
-                        const name = document.getElementById('edit-startup-name').value.trim();
-                        const industry = document.getElementById('edit-startup-industry').value;
-                        const description = document.getElementById('edit-startup-description').value.trim();
-                        const pitch = document.getElementById('edit-startup-pitch').value.trim();
-                        const funding = document.getElementById('edit-funding-stage').value;
-                        const fundingAmount = parseFloat(document.getElementById('edit-funding-amount').value);
-                        const employees = parseInt(document.getElementById('edit-team-size').value);
-                        const founded = document.getElementById('edit-founded-year').value;
-                        const location = document.getElementById('edit-location').value.trim();
-                        const website = document.getElementById('edit-website').value.trim();
-                        const linkedin = document.getElementById('edit-linkedin').value.trim();
-                        const twitter = document.getElementById('edit-twitter').value.trim();
-                        
-                        // Create social media object
-                        const socialMedia = {};
-                        if (linkedin) socialMedia.linkedin = linkedin;
-                        if (twitter) socialMedia.twitter = twitter;
-                        
-                        // Update or create startup profile
-                        if (startupId) {
-                            await API.updateStartup({
-                                _id: startupId,
-                                name,
-                                industry,
-                                description,
-                                pitch,
-                                funding,
-                                fundingAmount,
-                                employees,
-                                founded,
-                                location,
-                                website,
-                                socialMedia
-                            });
-                        } else {
-                            await API.createStartup({
-                                name,
-                                industry,
-                                description,
-                                pitch,
-                                funding,
-                                fundingAmount,
-                                employees,
-                                founded,
-                                location,
-                                website,
-                                socialMedia
-                            });
-                        }
-                        
-                        // Show success message
-                        this.app.showToast('Profile updated successfully!', 'success');
-                        
-                        // Reset button state
-                        btnText.textContent = 'Save Changes';
-                        btnSpinner.classList.add('hidden');
-                        saveBtn.disabled = false;
-                        
-                    } catch (error) {
-                        // Show error
-                        this.app.showToast(error.message || 'Failed to update profile', 'error');
-                        console.error('Error updating startup profile:', error);
-                        
-                        // Reset button state
-                        btnText.textContent = 'Save Changes';
-                        btnSpinner.classList.add('hidden');
-                        saveBtn.disabled = false;
-                    }
-                });
+                // Inside loadStartupProfileTab where the form submission is handled
+saveBtn.addEventListener('click', async () => {
+    // Show loading state
+    const btnText = document.getElementById('save-startup-profile-btn-text');
+    const btnSpinner = document.getElementById('save-startup-profile-spinner');
+    
+    btnText.textContent = 'Saving...';
+    btnSpinner.classList.remove('hidden');
+    saveBtn.disabled = true;
+    
+    try {
+        // Get form data
+        const startupId = document.getElementById('startup-id').value;
+        const startupData = {
+            name: document.getElementById('edit-startup-name').value.trim(),
+            industry: document.getElementById('edit-startup-industry').value,
+            description: document.getElementById('edit-startup-description').value.trim(),
+            pitch: document.getElementById('edit-startup-pitch').value.trim(),
+            funding: document.getElementById('edit-funding-stage').value,
+            fundingAmount: parseFloat(document.getElementById('edit-funding-amount').value),
+            employees: parseInt(document.getElementById('edit-team-size').value),
+            founded: document.getElementById('edit-founded-year').value,
+            location: document.getElementById('edit-location').value.trim(),
+            website: document.getElementById('edit-website').value.trim(),
+            socialMedia: {
+                linkedin: document.getElementById('edit-linkedin').value.trim(),
+                twitter: document.getElementById('edit-twitter').value.trim()
+            }
+        };
+
+        // Update startup profile
+        await API.updateStartup(startupId, startupData);
+        
+        // Show success message
+        this.app.showToast('Profile updated successfully!', 'success');
+        
+        // Reload the profile tab to show updated data
+        await this.loadProfileTabContent(this.app);
+        
+    } catch (error) {
+        // Show error
+        this.app.showToast(error.message || 'Failed to update profile', 'error');
+        console.error('Error updating startup profile:', error);
+    } finally {
+        // Reset button state
+        btnText.textContent = 'Save Changes';
+        btnSpinner.classList.add('hidden');
+        saveBtn.disabled = false;
+    }
+});
             }
             
         } catch (error) {
@@ -2079,15 +2053,12 @@ const DashboardPage = {
                 <div class="p-6">
                     <div class="text-center py-8">
                         <div class="text-gray-400 text-5xl mb-4">
-                            <i class="fas fa-user-cog"></i>
+                            <i class="fas fa-clock"></i>
                         </div>
-                        <h3 class="text-xl font-bold text-startup-dark dark:text-white mb-2">Complete Your Profile</h3>
-                        <p class="text-gray-600 dark:text-gray-300 mb-6">
-                            Please complete your startup profile to see matched investors
+                        <h3 class="text-xl font-bold text-startup-dark dark:text-white mb-2">No Matches Available</h3>
+                        <p class="text-gray-600 dark:text-gray-300">
+                            Please check back later to view your investor matches.
                         </p>
-                        <button id="complete-profile-btn" class="px-4 py-2 bg-startup-primary text-white rounded-md hover:bg-opacity-90">
-                            Complete Profile
-                        </button>
                     </div>
                 </div>
             `;
@@ -2243,11 +2214,6 @@ const DashboardPage = {
                 </div>
             `;
 
-            // Add event listener for update profile button
-            document.getElementById('update-profile-btn')?.addEventListener('click', () => {
-                const profileTab = document.querySelector('[data-tab="profile"]');
-                if (profileTab) profileTab.click();
-            });
         }
 
     } catch (error) {

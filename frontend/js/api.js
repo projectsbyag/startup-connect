@@ -228,7 +228,31 @@ class ApiService {
         
         return this.get(`/startups${queryString}`);
     }
-    
+    async createStartup(startupData) {
+    try {
+        // First check if user already has a startup profile
+        const existingStartup = await this.get('/startups/user/current');
+        
+        if (existingStartup.success && existingStartup.data) {
+            // Update existing profile
+            const response = await this.put(`/startups/${existingStartup.data._id}`, startupData);
+            if (!response.success) {
+                throw new Error(response.message || 'Failed to update startup');
+            }
+            return response.data;
+        } else {
+            // Create new profile
+            const response = await this.post('/startups/create', startupData);
+            if (!response.success) {
+                throw new Error(response.message || 'Failed to create startup');
+            }
+            return response.data;
+        }
+    } catch (error) {
+        console.error('API Error:', error);
+        throw error;
+    }
+}
     /**
      * Get a specific startup
      * @param {string} id - Startup ID
@@ -244,13 +268,29 @@ class ApiService {
      * @returns {Promise} - Startup data
      */
     async getStartupByUserId(userId) {
-        return this.get(`/startups/user/${userId}`);
+    try {
+        const response = await this.get(`/startups/user/${userId}`);
+        if (!response.success) {
+            throw new Error(response.message || 'Failed to fetch startup profile');
+        }
+        return response;
+    } catch (error) {
+        console.error('API Error:', error);
+        throw error;
     }
+}
     async updateStartup(startupId, startupData) {
-        // Ensure startupId is a string (extract _id if an object is passed)
-        const id = typeof startupId === 'object' && startupId !== null ? startupId._id : startupId;
-        return this.put(`/startups/${id}`, startupData);
+    try {
+        const response = await this.put(`/startups/${startupId}`, startupData);
+        if (!response.success) {
+            throw new Error(response.message || 'Failed to update startup profile');
+        }
+        return response.startup;
+    } catch (error) {
+        console.error('API Error:', error);
+        throw error;
     }
+}
     
     /**
      * Create or update startup profile

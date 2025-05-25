@@ -71,15 +71,7 @@ const SettingsPage = {
                                     </div>
 
                                     <!-- Delete Account -->
-                                    <div class="p-6">
-                                        <h3 class="text-lg font-medium text-red-600 mb-4">Delete Account</h3>
-                                        <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                                            Once you delete your account, all of your data will be permanently removed. This action cannot be undone.
-                                        </p>
-                                        <button id="delete-account-btn" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
-                                            Delete Account
-                                        </button>
-                                    </div>
+                
                                 </div>
                             </div>
 
@@ -138,15 +130,6 @@ const SettingsPage = {
                                                 <option value="private">Private</option>
                                             </select>
                                         </div>
-                                        <div class="flex items-center justify-between">
-                                            <div>
-                                                <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300">Two-Factor Authentication</h4>
-                                                <p class="text-sm text-gray-500 dark:text-gray-400">Add an extra layer of security to your account</p>
-                                            </div>
-                                            <button id="setup-2fa-btn" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-startup-primary dark:bg-gray-700 dark:text-white dark:border-gray-600 dark:hover:bg-gray-600">
-                                                Set Up
-                                            </button>
-                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -189,56 +172,46 @@ const SettingsPage = {
         });
 
         // Profile form submission
-        document.getElementById('profile-form')?.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const name = document.getElementById('profile-name').value;
-            const email = document.getElementById('profile-email').value;
-            
-            try {
-                await API.updateProfile({ name, email });
-                app.showToast('Profile updated successfully!', 'success');
-            } catch (error) {
-                app.showToast(error.message || 'Failed to update profile', 'error');
-            }
+        // Inside setupEventListeners:
+document.getElementById('password-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const currentPassword = document.getElementById('current-password').value;
+    const newPassword = document.getElementById('new-password').value;
+    const confirmPassword = document.getElementById('confirm-password').value;
+    
+    if (newPassword !== confirmPassword) {
+        app.showToast('New passwords do not match', 'error');
+        return;
+    }
+    
+    try {
+        await Auth.changePassword({
+            currentPassword,
+            newPassword
         });
+        app.showToast('Password updated successfully!', 'success');
+        e.target.reset();
+    } catch (error) {
+        app.showToast(error.message || 'Failed to update password', 'error');
+    }
+});
 
-        // Password form submission
-        document.getElementById('password-form')?.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const currentPassword = document.getElementById('current-password').value;
-            const newPassword = document.getElementById('new-password').value;
-            const confirmPassword = document.getElementById('confirm-password').value;
-            
-            if (newPassword !== confirmPassword) {
-                app.showToast('New passwords do not match', 'error');
-                return;
-            }
-            
-            try {
-                await API.updatePassword({ currentPassword, newPassword });
-                app.showToast('Password updated successfully!', 'success');
-                e.target.reset();
-            } catch (error) {
-                app.showToast(error.message || 'Failed to update password', 'error');
-            }
-        });
-
+document.getElementById('profile-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const name = document.getElementById('profile-name').value;
+    const email = document.getElementById('profile-email').value;
+    
+    try {
+        await Auth.updateProfile({ name, email });
+        app.showToast('Profile updated successfully!', 'success');
+    } catch (error) {
+        app.showToast(error.message || 'Failed to update profile', 'error');
+    }
+});
         // Delete account
-        document.getElementById('delete-account-btn')?.addEventListener('click', () => {
-            if (confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
-                API.deleteAccount()
-                    .then(() => {
-                        Auth.logout();
-                        app.navigateTo('home');
-                        app.showToast('Account deleted successfully', 'success');
-                    })
-                    .catch(error => {
-                        app.showToast(error.message || 'Failed to delete account', 'error');
-                    });
-            }
-        });
+        
 
         // Load current user data
         const user = Auth.getCurrentUser();
