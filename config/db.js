@@ -1,19 +1,30 @@
 // config/db.js
- const dotenv = require('dotenv');
+const dotenv = require('dotenv');
 const mongoose = require('mongoose');
-dotenv.config();
-const connectDB = async () => {
-  // 1) pick up the .env value, fall back to hard‑coded IPv4 URI
-  const MONGO_URI = process.env.DATABASE_URI?.trim() || 'mongodb://127.0.0.1:27017/startup-connect';
 
-  // 2) surface it immediately in your logs
-  console.log('→ Mongo will connect to:', MONGO_URI);
+// Load environment variables
+dotenv.config();
+
+const connectDB = async () => {
+  // Get the DATABASE_URI from environment variables
+  const MONGO_URI = process.env.DATABASE_URI || process.env.MONGODB_URI;
+  
+  // Debug: Log what we're trying to connect to
+  console.log('→ Environment DATABASE_URI exists:', !!process.env.DATABASE_URI);
+  console.log('→ Mongo will connect to:', MONGO_URI ? MONGO_URI.replace(/\/\/([^:]+):([^@]+)@/, '//***:***@') : 'NOT FOUND');
+
+  // Fallback error if no URI is found
+  if (!MONGO_URI) {
+    console.error('✖ No DATABASE_URI or MONGODB_URI found in environment variables');
+    console.error('Available env vars:', Object.keys(process.env).filter(key => key.includes('MONGO') || key.includes('DATABASE')));
+    process.exit(1);
+  }
 
   try {
     const conn = await mongoose.connect(MONGO_URI, {
-      serverSelectionTimeoutMS: 5000, // fail fast if it can’t reach the server
-      family: 4,                   // force IPv4 (avoid ::1 entirely)
-      bufferCommands: false,       // immediate errors instead of silent buffering
+      serverSelectionTimeoutMS: 10000, // Give it more time
+      family: 4,                      // Force IPv4
+      bufferCommands: false,          // Immediate errors
     });
 
     console.log(`✔ MongoDB Connected: ${conn.connection.host}`);
