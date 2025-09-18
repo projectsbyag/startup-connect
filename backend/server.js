@@ -20,9 +20,10 @@ const app = express();
 // Middleware
 const corsOptions = {
   origin: [
-    'http://localhost:3000',                    // local dev
-    'http://127.0.0.1:5500',                    // local static server (if used)
-    'https://your-vercel-app.vercel.app'        // replace with your actual Vercel URL
+    'http://localhost:3000',
+    'http://127.0.0.1:5500',
+    'https://startup-connect-one.vercel.app', // Remove the double slash
+    'https://*.vercel.app' // Allow all Vercel preview deployments
   ],
   credentials: true
 };

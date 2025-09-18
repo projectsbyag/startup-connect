@@ -4,7 +4,9 @@
 class ApiService {
     constructor() {
         // API base URL - change this to your actual backend URL in production
-        this.baseUrl = 'https://startupconnect-cjb9h4gka8cuhebt.southafricanorth-01.azurewebsites.net/api';
+        this.baseUrl = process.env.NEXT_PUBLIC_API_URL 
+            ? `${process.env.NEXT_PUBLIC_API_URL}/api`
+            : 'https://startupconnect-cjb9h4gka8cuhebt.southafricanorth-01.azurewebsites.net/api';
         this.token = localStorage.getItem('token') || null;
     }
 
