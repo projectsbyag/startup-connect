@@ -10,8 +10,8 @@ const connectDB = async () => {
   const MONGO_URI = process.env.DATABASE_URI || 
                     process.env.MONGODB_URI || 
                     process.env.CUSTOMCONNSTR_DATABASE_URI;
-  
-  // Debug: Log what we're trying to connect to
+
+  //Debug: Log what we're trying to connect to
   console.log('→ Environment DATABASE_URI exists:', !!process.env.DATABASE_URI);
   console.log('→ Environment CUSTOMCONNSTR_DATABASE_URI exists:', !!process.env.CUSTOMCONNSTR_DATABASE_URI);
   console.log('→ Mongo will connect to:', MONGO_URI ? MONGO_URI.replace(/\/\/([^:]+):([^@]+)@/, '//***:***@') : 'NOT FOUND');
