@@ -6,17 +6,22 @@ const mongoose = require('mongoose');
 dotenv.config();
 
 const connectDB = async () => {
-  // Get the DATABASE_URI from environment variables
-  const MONGO_URI = process.env.DATABASE_URI || process.env.MONGODB_URI;
+  // Azure stores connection strings with CUSTOMCONNSTR_ prefix
+  const MONGO_URI = process.env.DATABASE_URI || 
+                    process.env.MONGODB_URI || 
+                    process.env.CUSTOMCONNSTR_DATABASE_URI;
   
   // Debug: Log what we're trying to connect to
   console.log('→ Environment DATABASE_URI exists:', !!process.env.DATABASE_URI);
+  console.log('→ Environment CUSTOMCONNSTR_DATABASE_URI exists:', !!process.env.CUSTOMCONNSTR_DATABASE_URI);
   console.log('→ Mongo will connect to:', MONGO_URI ? MONGO_URI.replace(/\/\/([^:]+):([^@]+)@/, '//***:***@') : 'NOT FOUND');
 
   // Fallback error if no URI is found
   if (!MONGO_URI) {
     console.error('✖ No DATABASE_URI or MONGODB_URI found in environment variables');
-    console.error('Available env vars:', Object.keys(process.env).filter(key => key.includes('MONGO') || key.includes('DATABASE')));
+    console.error('Available env vars:', Object.keys(process.env).filter(key => 
+      key.includes('MONGO') || key.includes('DATABASE')
+    ));
     process.exit(1);
   }
 
