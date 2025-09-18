@@ -9,8 +9,8 @@
     "build": "npm install"
   },
   "engines": {
-    "node": "18.x",
-    "npm": ">=8.0.0"
+    "node": "22.x",
+    "npm": ">=10.0.0"
   },
   "keywords": ["startup", "backend", "api", "node.js"],
   "author": "Your Name",
