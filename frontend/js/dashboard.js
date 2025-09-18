@@ -7,7 +7,7 @@ const DashboardPage = {
      * @returns {string} - HTML content
      */
     app: null,
-    render: function() {
+    render: function () {
         // Check if user is authenticated
         if (!Auth.isUserAuthenticated()) {
             return `
@@ -29,21 +29,21 @@ const DashboardPage = {
                 </div>
             `;
         }
-        
+
         // Get user data
         const user = Auth.getCurrentUser();
-        
+
         // Check if profile is complete
         const isStartup = user.userType === 'startup';
         const isInvestor = user.userType === 'investor';
-        
+
         // Load appropriate dashboard based on user type
         if (isStartup) {
             return this.renderStartupDashboard(user);
         } else if (isInvestor) {
             return this.renderInvestorDashboard(user);
         }
-        
+
         // Default dashboard if user type is not recognized
         return `
             <div class="flex items-center justify-center min-h-[70vh] bg-gray-50 dark:bg-gray-900">
@@ -56,14 +56,14 @@ const DashboardPage = {
             </div>
         `;
     },
-    
+
     /**
      * Render startup dashboard
      * @param {Object} user - User data
      * @returns {string} - HTML content
      */
-    renderStartupDashboard: function(user) {
-        
+    renderStartupDashboard: function (user) {
+
         // Loading state for initial load
         return `
             <div class="bg-gray-50 dark:bg-gray-900 py-6">
@@ -212,13 +212,13 @@ const DashboardPage = {
             </div>
         `;
     },
-    
+
     /**
      * Render investor dashboard
      * @param {Object} user - User data
      * @returns {string} - HTML content
      */
-    renderInvestorDashboard: function(user) {
+    renderInvestorDashboard: function (user) {
         // Loading state for initial load
         return `
             <div class="bg-gray-50 dark:bg-gray-900 py-6">
@@ -441,13 +441,13 @@ const DashboardPage = {
             </div>
         `;
     },
-    
+
     /**
      * Render startup dashboard content after profile is complete
      * @param {Object} profile - Startup profile data
      * @returns {string} - HTML content
      */
-    renderStartupDashboardContent: function(profile) {
+    renderStartupDashboardContent: function (profile) {
         return `
             <div class="flex flex-col md:flex-row">
                 <!-- Sidebar -->
@@ -704,13 +704,13 @@ const DashboardPage = {
             </div>
         `;
     },
-    
+
     /**
      * Render investor dashboard content after profile is complete
      * @param {Object} profile - Investor profile data
      * @returns {string} - HTML content
      */
-    renderInvestorDashboardContent: function(profile) {
+    renderInvestorDashboardContent: function (profile) {
         return `
             <div class="flex flex-col md:flex-row">
                 <!-- Sidebar -->
@@ -962,67 +962,67 @@ const DashboardPage = {
             </div>
         `;
     },
-    
+
     /**
      * Set up event listeners for the dashboard page
      * @param {App} app - Main application instance
      */
-    setupEventListeners: function(app) {
+    setupEventListeners: function (app) {
         // Handle dashboard login/signup buttons for unauthenticated users
         const loginBtn = document.getElementById('dashboard-login-btn');
         const signupBtn = document.getElementById('dashboard-signup-btn');
-        
+
         if (loginBtn) {
             loginBtn.addEventListener('click', () => {
                 document.getElementById('login-modal').classList.remove('hidden');
             });
         }
-        
+
         if (signupBtn) {
             signupBtn.addEventListener('click', () => {
                 document.getElementById('signup-modal').classList.remove('hidden');
             });
         }
-        
-        // Listen for successful login/signup (you may already have this elsewhere)
-    document.addEventListener('user:login', () => {
-        // Hide login/signup buttons
-        loginBtn?.classList.add('hidden');
-        signupBtn?.classList.add('hidden');
-    });
-    document.addEventListener('user:signup', () => {
-        loginBtn?.classList.add('hidden');
-        signupBtn?.classList.add('hidden');
-    });
 
-    // If user is authenticated, load dashboard content
-    if (Auth.isUserAuthenticated()) {
-        loginBtn?.classList.add('hidden');
-        signupBtn?.classList.add('hidden');
-        this.loadDashboardContent(app);
-    }
-},
-    
+        // Listen for successful login/signup (you may already have this elsewhere)
+        document.addEventListener('user:login', () => {
+            // Hide login/signup buttons
+            loginBtn?.classList.add('hidden');
+            signupBtn?.classList.add('hidden');
+        });
+        document.addEventListener('user:signup', () => {
+            loginBtn?.classList.add('hidden');
+            signupBtn?.classList.add('hidden');
+        });
+
+        // If user is authenticated, load dashboard content
+        if (Auth.isUserAuthenticated()) {
+            loginBtn?.classList.add('hidden');
+            signupBtn?.classList.add('hidden');
+            this.loadDashboardContent(app);
+        }
+    },
+
     /**
      * Load dashboard content based on user type
      * @param {App} app - Main application instance
      */
-    loadDashboardContent: async function(app) {
+    loadDashboardContent: async function (app) {
         this.app = app;
         // Show loading state
         document.getElementById('dashboard-loading')?.classList.remove('hidden');
         document.getElementById('dashboard-error')?.classList.add('hidden');
         document.getElementById('dashboard-content')?.classList.add('hidden');
         document.getElementById('profile-completion')?.classList.add('hidden');
-        
+
         try {
             const user = Auth.getCurrentUser();
-            
+
             // Check user type
             if (user.userType === 'startup') {
                 // Load startup profile
                 const startupProfile = await this.loadStartupProfile(user);
-                
+
                 // Check if profile exists
                 if (startupProfile) {
                     // Profile exists, show dashboard content
@@ -1030,99 +1030,99 @@ const DashboardPage = {
                     document.getElementById('dashboard-loading').classList.add('hidden');
                     document.getElementById('dashboard-content').classList.remove('hidden');
                     // Setup dashboard tab navigation
-                    
+
                     this.setupStartupDashboardEventListeners(app, startupProfile);
                     this.setupDashboardTabs(app);
-                    
+
                     // Setup dashboard-specific event listeners
-                
+
                 } else {
                     // Profile doesn't exist, show completion form
                     document.getElementById('profile-completion').classList.remove('hidden');
-                    
+
                     // Setup profile completion form
                     this.setupStartupProfileCompletionForm(app);
                 }
             } else if (user.userType === 'investor') {
                 // Load investor profile
                 const investorProfile = await this.loadInvestorProfile(user);
-                
+
                 // Check if profile exists
                 if (investorProfile) {
                     // Profile exists, show dashboard content
                     document.getElementById('dashboard-content').innerHTML = this.renderInvestorDashboardContent(investorProfile);
                     document.getElementById('dashboard-content').classList.remove('hidden');
-                    
+
                     // Setup dashboard tab navigation
                     this.setupDashboardTabs(app);
-                    
+
                     // Setup dashboard-specific event listeners
                     this.setupInvestorDashboardEventListeners(app, investorProfile);
                 } else {
                     // Profile doesn't exist, show completion form
                     document.getElementById('profile-completion').classList.remove('hidden');
-                    
+
                     // Setup profile completion form
                     this.setupInvestorProfileCompletionForm(app);
                 }
             }
-            
+
             // Hide loading state
             document.getElementById('dashboard-loading').classList.add('hidden');
-            
+
         } catch (error) {
             // Show error state
             document.getElementById('dashboard-loading').classList.add('hidden');
             document.getElementById('dashboard-error').classList.remove('hidden');
             document.getElementById('dashboard-error-message').textContent = error.message || 'An error occurred while loading your dashboard.';
-            
+
             console.error('Error loading dashboard:', error);
-            
+
             // Add retry event listener
             document.getElementById('retry-dashboard-btn')?.addEventListener('click', () => {
                 this.loadDashboardContent(app);
             });
         }
     },
-    
+
     /**
      * Load startup profile
      * @param {Object} user - User data
      * @returns {Promise<Object|null>} - Startup profile or null if not found
      */
-    loadStartupProfile: async function(user) {
-    try {
-        // First check if user has a startup profile
-        const response = await API.getStartupByUserId(user._id);
-        
-        // Check if we got a valid response with startup data
-        if (response?.success && response?.startup) {
-            return response.startup;
-        }
+    loadStartupProfile: async function (user) {
+        try {
+            // First check if user has a startup profile
+            const response = await API.getStartupByUserId(user._id);
 
-        // If no startup found, show profile completion form
-        document.getElementById('dashboard-loading')?.classList.add('hidden');
-        document.getElementById('dashboard-content')?.classList.add('hidden');
-        document.getElementById('profile-completion')?.classList.remove('hidden');
-        return null;
-    } catch (error) {
-        // If profile doesn't exist yet, show completion form
-        if (error.message && error.message.includes('not found')) {
+            // Check if we got a valid response with startup data
+            if (response?.success && response?.startup) {
+                return response.startup;
+            }
+
+            // If no startup found, show profile completion form
             document.getElementById('dashboard-loading')?.classList.add('hidden');
             document.getElementById('dashboard-content')?.classList.add('hidden');
             document.getElementById('profile-completion')?.classList.remove('hidden');
             return null;
+        } catch (error) {
+            // If profile doesn't exist yet, show completion form
+            if (error.message && error.message.includes('not found')) {
+                document.getElementById('dashboard-loading')?.classList.add('hidden');
+                document.getElementById('dashboard-content')?.classList.add('hidden');
+                document.getElementById('profile-completion')?.classList.remove('hidden');
+                return null;
+            }
+            throw error;
         }
-        throw error;
-    }
-},
-    
+    },
+
     /**
      * Load investor profile
      * @param {Object} user - User data
      * @returns {Promise<Object|null>} - Investor profile or null if not found
      */
-    loadInvestorProfile: async function(user) {
+    loadInvestorProfile: async function (user) {
         try {
             // First check if user has an investor profile
             const response = await API.getInvestorByUserId(user._id);
@@ -1135,112 +1135,120 @@ const DashboardPage = {
             throw error;
         }
     },
-    
+
     /**
      * Setup startup profile completion form
      * @param {App} app - Main application instance
      */
-    setupStartupProfileCompletionForm: function(app) {
+    setupStartupProfileCompletionForm: function (app) {
         const form = document.getElementById('profile-completion-form');
-        
+
         if (!form) return;
-        
+
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
-            
+
             const startupData = {
-            name: document.getElementById('startup-name').value.trim(),
-            description: document.getElementById('startup-description').value.trim(),
-            industry: document.getElementById('startup-industry').value,
-            funding: document.getElementById('funding-stage').value,
-            fundingAmount: parseFloat(document.getElementById('funding-amount').value) || 0,
-            employees: parseInt(document.getElementById('team-size').value) || 1,
-            founded: document.getElementById('founded-year').value.toString(),
-            location: document.getElementById('location').value.trim(),
-            pitch: document.getElementById('pitch').value.trim()
-        };
+                name: document.getElementById('startup-name').value.trim(),
+                description: document.getElementById('startup-description').value.trim(),
+                industry: document.getElementById('startup-industry').value,
+                funding: document.getElementById('funding-stage').value,
+                fundingAmount: parseFloat(document.getElementById('funding-amount').value) || 0,
+                employees: parseInt(document.getElementById('team-size').value) || 1,
+                founded: document.getElementById('founded-year').value.toString(),
+                location: document.getElementById('location').value.trim(),
+                pitch: document.getElementById('pitch').value.trim()
+            };
             // Show loading state
             const btnText = document.getElementById('complete-profile-btn-text');
             const btnSpinner = document.getElementById('complete-profile-spinner');
             const submitBtn = document.getElementById('complete-profile-btn');
-            
+
             btnText.textContent = 'Creating profile...';
             btnSpinner.classList.remove('hidden');
             submitBtn.disabled = true;
-        
-           try {
-            // Create startup profile
-            const startupProfile = await API.createStartup(startupData);
-            
-            // Show success message
-            app.showToast('Startup profile created successfully!', 'success');
-            
-            // Reload dashboard content
-            this.loadDashboardContent(app);
-            
-        } catch (error) {
-            // Show error
-            app.showToast(error.message || 'Failed to create startup profile', 'error');
-            console.error('Error creating startup profile:', error);
-            
-            // Reset button state
-            btnText.textContent = 'Complete Profile';
-            btnSpinner.classList.add('hidden');
-            submitBtn.disabled = false;
-        }
+
+            try {
+    // Create startup profile
+    const response = await API.createStartup(startupData);
+
+    // Show success message
+    app.showToast('Startup profile created successfully!', 'success');
+
+    // If profile was created, show dashboard immediately
+    if (response?.success && response?.startup) {
+        document.getElementById('dashboard-content').innerHTML = this.renderStartupDashboardContent(response.startup);
+        document.getElementById('dashboard-loading').classList.add('hidden');
+        document.getElementById('dashboard-content').classList.remove('hidden');
+        this.setupStartupDashboardEventListeners(app, response.startup);
+        this.setupDashboardTabs(app);
+    } else {
+        // Fallback: reload dashboard content
+        this.loadDashboardContent(app);
+    }
+} catch (error) {
+                // Show error
+                app.showToast(error.message || 'Failed to create startup profile', 'error');
+                console.error('Error creating startup profile:', error);
+
+                // Reset button state
+                btnText.textContent = 'Complete Profile';
+                btnSpinner.classList.add('hidden');
+                submitBtn.disabled = false;
+            }
         });
     },
-    
+
     /**
      * Setup investor profile completion form
      * @param {App} app - Main application instance
      */
-    setupInvestorProfileCompletionForm: function(app) {
+    setupInvestorProfileCompletionForm: function (app) {
         const form = document.getElementById('investor-profile-completion-form');
-        
+
         if (!form) return;
-        
+
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
-            
+
             // Get form data
             const firmName = document.getElementById('firm-name').value.trim();
             const position = document.getElementById('position').value.trim();
-            
+
             // Get investment focus (checkboxes)
             const focusCheckboxes = document.querySelectorAll('input[name="investment-focus"]:checked');
             const investmentFocus = Array.from(focusCheckboxes).map(cb => cb.value);
-            
+
             // Get investment stage (checkboxes)
             const stageCheckboxes = document.querySelectorAll('input[name="investment-stage"]:checked');
             const investmentStage = Array.from(stageCheckboxes).map(cb => cb.value);
-            
+
             const minInvestment = parseFloat(document.getElementById('min-investment').value);
             const maxInvestment = parseFloat(document.getElementById('max-investment').value);
             const portfolioSize = parseInt(document.getElementById('portfolio-size').value);
             const location = document.getElementById('investor-location').value.trim();
             const bio = document.getElementById('bio').value.trim();
-            
+
             // Validate required fields
             if (investmentFocus.length === 0) {
                 app.showToast('Please select at least one investment focus area', 'error');
                 return;
             }
-            
+
             if (investmentStage.length === 0) {
                 app.showToast('Please select at least one investment stage', 'error');
                 return;
             }
-            
+
             // Show loading state
             const btnText = document.getElementById('complete-investor-profile-btn-text');
             const btnSpinner = document.getElementById('complete-investor-profile-spinner');
             const submitBtn = document.getElementById('complete-investor-profile-btn');
-            
+
             btnText.textContent = 'Creating profile...';
             btnSpinner.classList.remove('hidden');
             submitBtn.disabled = true;
-            
+
             try {
                 // Create investor profile
                 const investorProfile = await API.saveInvestorProfile({
@@ -1254,18 +1262,18 @@ const DashboardPage = {
                     location: location,
                     bio: bio
                 });
-                
+
                 // Show success message
                 app.showToast('Investor profile created successfully!', 'success');
-                
+
                 // Reload dashboard content
                 this.loadDashboardContent(app);
-                
+
             } catch (error) {
                 // Show error
                 app.showToast(error.message || 'Failed to create investor profile', 'error');
                 console.error('Error creating investor profile:', error);
-                
+
                 // Reset button state
                 btnText.textContent = 'Complete Profile';
                 btnSpinner.classList.add('hidden');
@@ -1273,51 +1281,51 @@ const DashboardPage = {
             }
         });
     },
-    
+
     /**
      * Setup dashboard tabs navigation
      */
-    setupDashboardTabs: function(app) {
+    setupDashboardTabs: function (app) {
         this.app = app;
         const navLinks = document.querySelectorAll('.dashboard-nav');
         const tabContents = document.querySelectorAll('.dashboard-tab');
-        
+
         navLinks.forEach(link => {
             link.addEventListener('click', (e) => {
                 e.preventDefault();
-                
+
                 // Get tab ID
                 const tabId = link.dataset.tab;
-                
+
                 // Remove active class from all links
                 navLinks.forEach(item => {
                     item.classList.remove('active', 'text-startup-primary', 'bg-purple-50', 'dark:bg-gray-800');
                     item.classList.add('text-gray-700', 'dark:text-gray-300', 'hover:bg-gray-100', 'dark:hover:bg-gray-800');
                 });
-                
+
                 // Add active class to current link
                 link.classList.add('active', 'text-startup-primary', 'bg-purple-50', 'dark:bg-gray-800');
                 link.classList.remove('text-gray-700', 'dark:text-gray-300', 'hover:bg-gray-100', 'dark:hover:bg-gray-800');
-                
+
                 // Hide all tab contents
                 tabContents.forEach(tab => {
                     tab.classList.add('hidden');
                 });
-                
+
                 // Show current tab content
                 document.getElementById(`${tabId}-tab`)?.classList.remove('hidden');
-                
+
                 // Load tab content if needed
                 this.loadTabContent(tabId, this.app);
             });
         });
     },
-    
+
     /**
      * Load tab content as needed
      * @param {string} tabId - Tab ID
      */
-    loadTabContent: function(tabId, app) {
+    loadTabContent: function (tabId, app) {
         this.app = app;
         // Based on tab ID, load specific content
         switch (tabId) {
@@ -1354,16 +1362,16 @@ const DashboardPage = {
                 break;
         }
     },
-    
+
     /**
      * Load profile tab content
      */
-    loadProfileTabContent: function(app) {
+    loadProfileTabContent: function (app) {
         this.app = app;
         const tabContent = document.getElementById('profile-tab');
-        
+
         if (!tabContent) return;
-        
+
         // Show loading state
         tabContent.innerHTML = `
             <div class="p-6">
@@ -1374,29 +1382,29 @@ const DashboardPage = {
                 </div>
             </div>
         `;
-        
+
         // Load profile data
         const user = Auth.getCurrentUser();
-        
+
         if (user.userType === 'startup') {
             this.loadStartupProfileTab(tabContent, this.app);
         } else if (user.userType === 'investor') {
             this.loadInvestorProfileTab(tabContent, this.app);
         }
     },
-    
+
     /**
      * Load startup profile tab content
      * @param {HTMLElement} container - Tab content container
      */
-    loadStartupProfileTab: async function(container, app) {
+    loadStartupProfileTab: async function (container, app) {
         this.app = app;
         try {
             // Load startup profile
             const user = Auth.getCurrentUser();
             const response = await API.getStartupByUserId(user._id);
             const profile = response.startup;
-            
+
             // Render profile form
             container.innerHTML = `
                 <div class="p-6">
@@ -1557,64 +1565,64 @@ const DashboardPage = {
                     </form>
                 </div>
             `;
-            
+
             // Setup form submission
             const form = document.getElementById('edit-startup-profile-form');
             const saveBtn = document.getElementById('save-startup-profile-btn');
-            
+
             if (form && saveBtn) {
                 // Inside loadStartupProfileTab where the form submission is handled
-saveBtn.addEventListener('click', async () => {
-    // Show loading state
-    const btnText = document.getElementById('save-startup-profile-btn-text');
-    const btnSpinner = document.getElementById('save-startup-profile-spinner');
-    
-    btnText.textContent = 'Saving...';
-    btnSpinner.classList.remove('hidden');
-    saveBtn.disabled = true;
-    
-    try {
-        // Get form data
-        const startupId = document.getElementById('startup-id').value;
-        const startupData = {
-            name: document.getElementById('edit-startup-name').value.trim(),
-            industry: document.getElementById('edit-startup-industry').value,
-            description: document.getElementById('edit-startup-description').value.trim(),
-            pitch: document.getElementById('edit-startup-pitch').value.trim(),
-            funding: document.getElementById('edit-funding-stage').value,
-            fundingAmount: parseFloat(document.getElementById('edit-funding-amount').value),
-            employees: parseInt(document.getElementById('edit-team-size').value),
-            founded: document.getElementById('edit-founded-year').value,
-            location: document.getElementById('edit-location').value.trim(),
-            website: document.getElementById('edit-website').value.trim(),
-            socialMedia: {
-                linkedin: document.getElementById('edit-linkedin').value.trim(),
-                twitter: document.getElementById('edit-twitter').value.trim()
-            }
-        };
+                saveBtn.addEventListener('click', async () => {
+                    // Show loading state
+                    const btnText = document.getElementById('save-startup-profile-btn-text');
+                    const btnSpinner = document.getElementById('save-startup-profile-spinner');
 
-        // Update startup profile
-        await API.updateStartup(startupId, startupData);
-        
-        // Show success message
-        this.app.showToast('Profile updated successfully!', 'success');
-        
-        // Reload the profile tab to show updated data
-        await this.loadProfileTabContent(this.app);
-        
-    } catch (error) {
-        // Show error
-        this.app.showToast(error.message || 'Failed to update profile', 'error');
-        console.error('Error updating startup profile:', error);
-    } finally {
-        // Reset button state
-        btnText.textContent = 'Save Changes';
-        btnSpinner.classList.add('hidden');
-        saveBtn.disabled = false;
-    }
-});
+                    btnText.textContent = 'Saving...';
+                    btnSpinner.classList.remove('hidden');
+                    saveBtn.disabled = true;
+
+                    try {
+                        // Get form data
+                        const startupId = document.getElementById('startup-id').value;
+                        const startupData = {
+                            name: document.getElementById('edit-startup-name').value.trim(),
+                            industry: document.getElementById('edit-startup-industry').value,
+                            description: document.getElementById('edit-startup-description').value.trim(),
+                            pitch: document.getElementById('edit-startup-pitch').value.trim(),
+                            funding: document.getElementById('edit-funding-stage').value,
+                            fundingAmount: parseFloat(document.getElementById('edit-funding-amount').value),
+                            employees: parseInt(document.getElementById('edit-team-size').value),
+                            founded: document.getElementById('edit-founded-year').value,
+                            location: document.getElementById('edit-location').value.trim(),
+                            website: document.getElementById('edit-website').value.trim(),
+                            socialMedia: {
+                                linkedin: document.getElementById('edit-linkedin').value.trim(),
+                                twitter: document.getElementById('edit-twitter').value.trim()
+                            }
+                        };
+
+                        // Update startup profile
+                        await API.updateStartup(startupId, startupData);
+
+                        // Show success message
+                        this.app.showToast('Profile updated successfully!', 'success');
+
+                        // Reload the profile tab to show updated data
+                        await this.loadProfileTabContent(this.app);
+
+                    } catch (error) {
+                        // Show error
+                        this.app.showToast(error.message || 'Failed to update profile', 'error');
+                        console.error('Error updating startup profile:', error);
+                    } finally {
+                        // Reset button state
+                        btnText.textContent = 'Save Changes';
+                        btnSpinner.classList.add('hidden');
+                        saveBtn.disabled = false;
+                    }
+                });
             }
-            
+
         } catch (error) {
             // Show error in container
             container.innerHTML = `
@@ -1634,21 +1642,21 @@ saveBtn.addEventListener('click', async () => {
                     </div>
                 </div>
             `;
-            
+
             // Add retry button listener
             document.getElementById('retry-profile-btn')?.addEventListener('click', () => {
-                this.loadProfileTabContent( this.app);
+                this.loadProfileTabContent(this.app);
             });
-            
+
             console.error('Error loading startup profile tab:', error);
         }
     },
-    
+
     /**
      * Load investor profile tab content
      * @param {HTMLElement} container - Tab content container
      */
-    loadInvestorProfileTab: async function(container, app) {
+    loadInvestorProfileTab: async function (container, app) {
         this.app = app;
         // Implementation similar to loadStartupProfileTab but for investor profiles
         try {
@@ -1656,7 +1664,7 @@ saveBtn.addEventListener('click', async () => {
             const user = Auth.getCurrentUser();
             const response = await API.getInvestorByUserId(user._id);
             const profile = response.investor;
-            
+
             // Render profile form
             container.innerHTML = `
                 <div class="p-6">
@@ -1893,21 +1901,21 @@ saveBtn.addEventListener('click', async () => {
                     </form>
                 </div>
             `;
-            
+
             // Setup form submission
             const form = document.getElementById('edit-investor-profile-form');
             const saveBtn = document.getElementById('save-investor-profile-btn');
-            
+
             if (form && saveBtn) {
                 saveBtn.addEventListener('click', async () => {
                     // Show loading state
                     const btnText = document.getElementById('save-investor-profile-btn-text');
                     const btnSpinner = document.getElementById('save-investor-profile-spinner');
-                    
+
                     btnText.textContent = 'Saving...';
                     btnSpinner.classList.remove('hidden');
                     saveBtn.disabled = true;
-                    
+
                     try {
                         // Get form data
                         const investorId = document.getElementById('investor-id').value;
@@ -1915,50 +1923,50 @@ saveBtn.addEventListener('click', async () => {
                         const position = document.getElementById('edit-position').value.trim();
                         const bio = document.getElementById('edit-bio').value.trim();
                         const location = document.getElementById('edit-location').value.trim();
-                        
+
                         // Get investment focus (checkboxes)
                         const focusCheckboxes = document.querySelectorAll('input[name="investment-focus"]:checked');
                         const focus = Array.from(focusCheckboxes).map(cb => cb.value);
-                        
+
                         // Get investment stage (checkboxes)
                         const stageCheckboxes = document.querySelectorAll('input[name="investment-stage"]:checked');
                         const stage = Array.from(stageCheckboxes).map(cb => cb.value);
-                        
+
                         const min = parseFloat(document.getElementById('edit-min-investment').value);
                         const max = parseFloat(document.getElementById('edit-max-investment').value);
                         const portfolioSize = parseInt(document.getElementById('edit-portfolio-size').value);
                         const website = document.getElementById('edit-website').value.trim();
                         const linkedin = document.getElementById('edit-linkedin').value.trim();
                         const twitter = document.getElementById('edit-twitter').value.trim();
-                        
+
                         // Create social media object
                         const socialMedia = {};
                         if (linkedin) socialMedia.linkedin = linkedin;
                         if (twitter) socialMedia.twitter = twitter;
-                        
+
                         // Validate required fields
                         if (focus.length === 0) {
                             app.showToast('Please select at least one investment focus area', 'error');
-                            
+
                             // Reset button state
                             btnText.textContent = 'Save Changes';
                             btnSpinner.classList.add('hidden');
                             saveBtn.disabled = false;
-                            
+
                             return;
                         }
-                        
+
                         if (stage.length === 0) {
                             app.showToast('Please select at least one investment stage', 'error');
-                            
+
                             // Reset button state
                             btnText.textContent = 'Save Changes';
                             btnSpinner.classList.add('hidden');
                             saveBtn.disabled = false;
-                            
+
                             return;
                         }
-                        
+
                         // Update investor profile
                         await API.saveInvestorProfile({
                             _id: investorId,
@@ -1974,20 +1982,20 @@ saveBtn.addEventListener('click', async () => {
                             website,
                             socialMedia
                         });
-                        
+
                         // Show success message
                         app.showToast('Profile updated successfully!', 'success');
-                        
+
                         // Reset button state
                         btnText.textContent = 'Save Changes';
                         btnSpinner.classList.add('hidden');
                         saveBtn.disabled = false;
-                        
+
                     } catch (error) {
                         // Show error
                         app.showToast(error.message || 'Failed to update profile', 'error');
                         console.error('Error updating investor profile:', error);
-                        
+
                         // Reset button state
                         btnText.textContent = 'Save Changes';
                         btnSpinner.classList.add('hidden');
@@ -1995,7 +2003,7 @@ saveBtn.addEventListener('click', async () => {
                     }
                 });
             }
-            
+
         } catch (error) {
             // Show error in container
             container.innerHTML = `
@@ -2015,26 +2023,26 @@ saveBtn.addEventListener('click', async () => {
                     </div>
                 </div>
             `;
-            
+
             // Add retry button listener
             document.getElementById('retry-profile-btn')?.addEventListener('click', () => {
                 this.loadProfileTabContent();
             });
-            
+
             console.error('Error loading investor profile tab:', error);
         }
     },
-    
-    loadMatchesTabContent: async function() {
-    const container = document.getElementById('matches-tab');
-    if (!container) return;
 
-    try {
-        // Get current user
-        const user = Auth.getCurrentUser();
-        
-        // Show initial loading state
-        container.innerHTML = `
+    loadMatchesTabContent: async function () {
+        const container = document.getElementById('matches-tab');
+        if (!container) return;
+
+        try {
+            // Get current user
+            const user = Auth.getCurrentUser();
+
+            // Show initial loading state
+            container.innerHTML = `
             <div class="p-6">
                 <h2 class="text-2xl font-bold text-startup-dark dark:text-white mb-6">Investor Matches</h2>
                 <div id="matches-loading" class="text-center py-8">
@@ -2044,12 +2052,12 @@ saveBtn.addEventListener('click', async () => {
             </div>
         `;
 
-        // Get startup profile
-        const response = await API.getStartups();
-        const startup = response.startup;
+            // Get startup profile
+            const response = await API.getStartups();
+            const startup = response.startup;
 
-        if (!startup) {
-            container.innerHTML = `
+            if (!startup) {
+                container.innerHTML = `
                 <div class="p-6">
                     <div class="text-center py-8">
                         <div class="text-gray-400 text-5xl mb-4">
@@ -2062,20 +2070,20 @@ saveBtn.addEventListener('click', async () => {
                     </div>
                 </div>
             `;
-            
-            document.getElementById('complete-profile-btn')?.addEventListener('click', () => {
-                const profileTab = document.querySelector('[data-tab="profile"]');
-                if (profileTab) profileTab.click();
-            });
-            return;
-        }
 
-        // Get matches
-        const matchesResponse = await API.get(`/startups/${startup._id}/matches`);
-        const matches = matchesResponse.data;
+                document.getElementById('complete-profile-btn')?.addEventListener('click', () => {
+                    const profileTab = document.querySelector('[data-tab="profile"]');
+                    if (profileTab) profileTab.click();
+                });
+                return;
+            }
 
-        if (matches && matches.length > 0) {
-            container.innerHTML = `
+            // Get matches
+            const matchesResponse = await API.get(`/startups/${startup._id}/matches`);
+            const matches = matchesResponse.data;
+
+            if (matches && matches.length > 0) {
+                container.innerHTML = `
                 <div class="p-6">
                     <div class="flex justify-between items-center mb-6">
                         <h2 class="text-2xl font-bold text-startup-dark dark:text-white">Investor Matches</h2>
@@ -2164,40 +2172,40 @@ saveBtn.addEventListener('click', async () => {
                 </div>
             `;
 
-            // Setup sorting functionality
-            const sortSelect = document.getElementById('matches-sort');
-            if (sortSelect) {
-                sortSelect.addEventListener('change', (e) => {
-                    const sortedMatches = [...matches].sort((a, b) => {
-                        switch (e.target.value) {
-                            case 'match-high':
-                                return b.matchPercentage - a.matchPercentage;
-                            case 'match-low':
-                                return a.matchPercentage - b.matchPercentage;
-                            case 'portfolio':
-                                return b.investor.portfolioSize - a.investor.portfolioSize;
-                            default:
-                                return 0;
-                        }
-                    });
+                // Setup sorting functionality
+                const sortSelect = document.getElementById('matches-sort');
+                if (sortSelect) {
+                    sortSelect.addEventListener('change', (e) => {
+                        const sortedMatches = [...matches].sort((a, b) => {
+                            switch (e.target.value) {
+                                case 'match-high':
+                                    return b.matchPercentage - a.matchPercentage;
+                                case 'match-low':
+                                    return a.matchPercentage - b.matchPercentage;
+                                case 'portfolio':
+                                    return b.investor.portfolioSize - a.investor.portfolioSize;
+                                default:
+                                    return 0;
+                            }
+                        });
 
-                    const matchesGrid = document.getElementById('matches-grid');
-                    if (matchesGrid) {
-                        matchesGrid.innerHTML = sortedMatches.map(match => `
+                        const matchesGrid = document.getElementById('matches-grid');
+                        if (matchesGrid) {
+                            matchesGrid.innerHTML = sortedMatches.map(match => `
                             // Same card template as above
                         `).join('');
-                        
-                        // Reattach event listeners after sorting
-                        this.setupMatchButtonListeners();
-                    }
-                });
-            }
 
-            // Setup button event listeners
-            this.setupMatchButtonListeners();
+                            // Reattach event listeners after sorting
+                            this.setupMatchButtonListeners();
+                        }
+                    });
+                }
 
-        } else {
-            container.innerHTML = `
+                // Setup button event listeners
+                this.setupMatchButtonListeners();
+
+            } else {
+                container.innerHTML = `
                 <div class="p-6">
                     <div class="text-center py-8">
                         <div class="text-gray-400 text-5xl mb-4">
@@ -2214,11 +2222,11 @@ saveBtn.addEventListener('click', async () => {
                 </div>
             `;
 
-        }
+            }
 
-    } catch (error) {
-        console.error('Error loading matches:', error);
-        container.innerHTML = `
+        } catch (error) {
+            console.error('Error loading matches:', error);
+            container.innerHTML = `
             <div class="p-6">
                 <div class="text-center py-8">
                     <div class="text-red-500 text-5xl mb-4">
@@ -2233,18 +2241,18 @@ saveBtn.addEventListener('click', async () => {
             </div>
         `;
 
-        // Add retry button listener
-        document.getElementById('retry-matches-btn')?.addEventListener('click', () => {
-            this.loadMatchesTabContent();
-        });
-    }
-},
-loadStartupOpportunitieTabContent: async function() {
-    const container = document.getElementById('startups-tab');
-    if (!container) return;
+            // Add retry button listener
+            document.getElementById('retry-matches-btn')?.addEventListener('click', () => {
+                this.loadMatchesTabContent();
+            });
+        }
+    },
+    loadStartupOpportunitieTabContent: async function () {
+        const container = document.getElementById('startups-tab');
+        if (!container) return;
 
-    // Show loading state
-    container.innerHTML = `
+        // Show loading state
+        container.innerHTML = `
         <div class="p-6">
             <h2 class="text-2xl font-bold text-startup-dark dark:text-white mb-6">Startup Opportunities</h2>
             <div class="py-4 text-center">
@@ -2254,22 +2262,22 @@ loadStartupOpportunitieTabContent: async function() {
         </div>
     `;
 
-    try {
-        // Fetch matching startups from API
-        const response = await API.getStartupOpportunities();
-        const startups = response.startups || [];
+        try {
+            // Fetch matching startups from API
+            const response = await API.getStartupOpportunities();
+            const startups = response.startups || [];
 
-        if (startups.length === 0) {
-            container.innerHTML = `
+            if (startups.length === 0) {
+                container.innerHTML = `
                 <div class="p-6">
                     <h2 class="text-2xl font-bold text-startup-dark dark:text-white mb-6">Startup Opportunities</h2>
                     <p class="text-gray-600 dark:text-gray-300">No suitable startups found matching your investment criteria.</p>
                 </div>
             `;
-            return;
-        }
+                return;
+            }
 
-        container.innerHTML = `
+            container.innerHTML = `
             <div class="p-6">
                 <h2 class="text-2xl font-bold text-startup-dark dark:text-white mb-6">Startup Opportunities</h2>
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -2314,18 +2322,59 @@ loadStartupOpportunitieTabContent: async function() {
             </div>
         `;
 
-        // Setup connect/details button listeners
-        document.querySelectorAll('.startup-connect-btn').forEach(btn => {
+            // Setup connect/details button listeners
+            document.querySelectorAll('.startup-connect-btn').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    const startupId = btn.dataset.id;
+                    btn.disabled = true;
+                    btn.innerHTML = `<span class="spinner inline-block mr-1"></span>Connecting...`;
+                    try {
+                        await API.sendConnectionRequest(startupId);
+                        btn.innerHTML = `<i class="fas fa-check mr-1"></i>Sent`;
+                        btn.classList.remove('bg-startup-primary');
+                        btn.classList.add('bg-green-500');
+                        btn.disabled = true;
+                        this.app?.showToast('Connection request sent!', 'success');
+                    } catch (error) {
+                        btn.disabled = false;
+                        btn.innerHTML = 'Connect';
+                        this.app?.showToast(error.message || 'Failed to connect', 'error');
+                    }
+                });
+            });
+            document.querySelectorAll('.startup-details-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const startupId = btn.dataset.id;
+                    // Implement your details modal or navigation here
+                    StartupsPage.showStartupDetails(startupId);
+                });
+            });
+
+        } catch (error) {
+            container.innerHTML = `
+            <div class="p-6">
+                <h2 class="text-2xl font-bold text-startup-dark dark:text-white mb-6">Startup Opportunities</h2>
+                <div class="text-red-500">Failed to load startup opportunities: ${error.message}</div>
+            </div>
+        `;
+        }
+    },
+
+    setupMatchButtonListeners: function () {
+        // Connect buttons
+        document.querySelectorAll('.connect-btn').forEach(btn => {
             btn.addEventListener('click', async (e) => {
-                const startupId = btn.dataset.id;
-                btn.disabled = true;
-                btn.innerHTML = `<span class="spinner inline-block mr-1"></span>Connecting...`;
+                const investorId = btn.dataset.investorId;
                 try {
-                    await API.sendConnectionRequest(startupId);
-                    btn.innerHTML = `<i class="fas fa-check mr-1"></i>Sent`;
+                    btn.disabled = true;
+                    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Connecting...';
+
+                    await API.sendConnectionRequest(investorId);
+
+                    btn.innerHTML = '<i class="fas fa-check mr-1"></i> Connected';
                     btn.classList.remove('bg-startup-primary');
                     btn.classList.add('bg-green-500');
-                    btn.disabled = true;
+
                     this.app?.showToast('Connection request sent!', 'success');
                 } catch (error) {
                     btn.disabled = false;
@@ -2334,70 +2383,29 @@ loadStartupOpportunitieTabContent: async function() {
                 }
             });
         });
-        document.querySelectorAll('.startup-details-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const startupId = btn.dataset.id;
-                // Implement your details modal or navigation here
-                StartupsPage.showStartupDetails(startupId);
+
+        // Message buttons
+        document.querySelectorAll('.message-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                const investorId = btn.dataset.investorId;
+                const investorName = btn.dataset.investorName;
+                try {
+                    await this.startChat(investorId, investorName, this.app);
+                } catch (error) {
+                    this.app?.showToast(error.message || 'Failed to start chat', 'error');
+                }
             });
         });
-
-    } catch (error) {
-        container.innerHTML = `
-            <div class="p-6">
-                <h2 class="text-2xl font-bold text-startup-dark dark:text-white mb-6">Startup Opportunities</h2>
-                <div class="text-red-500">Failed to load startup opportunities: ${error.message}</div>
-            </div>
-        `;
-    }
-},
-
-setupMatchButtonListeners: function() {
-    // Connect buttons
-    document.querySelectorAll('.connect-btn').forEach(btn => {
-        btn.addEventListener('click', async (e) => {
-            const investorId = btn.dataset.investorId;
-            try {
-                btn.disabled = true;
-                btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Connecting...';
-                
-                await API.sendConnectionRequest(investorId);
-                
-                btn.innerHTML = '<i class="fas fa-check mr-1"></i> Connected';
-                btn.classList.remove('bg-startup-primary');
-                btn.classList.add('bg-green-500');
-                
-                this.app?.showToast('Connection request sent!', 'success');
-            } catch (error) {
-                btn.disabled = false;
-                btn.innerHTML = 'Connect';
-                this.app?.showToast(error.message || 'Failed to connect', 'error');
-            }
-        });
-    });
-
-    // Message buttons
-    document.querySelectorAll('.message-btn').forEach(btn => {
-        btn.addEventListener('click', async (e) => {
-            const investorId = btn.dataset.investorId;
-            const investorName = btn.dataset.investorName;
-            try {
-                await this.startChat(investorId, investorName, this.app);
-            } catch (error) {
-                this.app?.showToast(error.message || 'Failed to start chat', 'error');
-            }
-        });
-    });
-},
+    },
 
     /**
      * Load messages tab content
      */
-    loadMessagesTabContent: async function() {
-    const container = document.getElementById('messages-tab');
-    if (!container) return;
+    loadMessagesTabContent: async function () {
+        const container = document.getElementById('messages-tab');
+        if (!container) return;
 
-    container.innerHTML = `
+        container.innerHTML = `
         <div class="p-6">
             <h2 class="text-2xl font-bold text-startup-dark dark:text-white mb-6">Messages</h2>
             <div class="py-4 text-center">
@@ -2407,11 +2415,11 @@ setupMatchButtonListeners: function() {
         </div>
     `;
 
-    try {
-        const response = await API.getConversations();
-        const conversations = response.data || [];
+        try {
+            const response = await API.getConversations();
+            const conversations = response.data || [];
 
-        container.innerHTML = `
+            container.innerHTML = `
             <div class="p-6">
                 <h2 class="text-2xl font-bold text-startup-dark dark:text-white mb-6">Messages</h2>
                 <div class="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
@@ -2425,10 +2433,10 @@ setupMatchButtonListeners: function() {
                                     class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-startup-primary focus:border-startup-primary dark:bg-gray-700 dark:text-white">
                             </div>
                             <div class="overflow-y-auto h-[600px]" id="conversations-list">
-                                ${conversations.length > 0 ? 
-                                    conversations.map(conv => {
-                                        const user = conv.participants[0]; // The other participant
-                                        return `
+                                ${conversations.length > 0 ?
+                    conversations.map(conv => {
+                        const user = conv.participants[0]; // The other participant
+                        return `
                                             <div class="conversation-item p-4 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer" data-conv-id="${conv._id}">
                                                 <div class="flex items-center justify-between">
                                                     <div class="flex items-center">
@@ -2450,9 +2458,9 @@ setupMatchButtonListeners: function() {
                                                 </div>
                                             </div>
                                         `;
-                                    }).join('') : 
-                                    `<div class="p-4 text-center text-gray-500 dark:text-gray-400">No conversations yet</div>`
-                                }
+                    }).join('') :
+                    `<div class="p-4 text-center text-gray-500 dark:text-gray-400">No conversations yet</div>`
+                }
                             </div>
                         </div>
                         <!-- Messages View -->
@@ -2471,36 +2479,36 @@ setupMatchButtonListeners: function() {
             </div>
         `;
 
-        // Setup conversation click handlers
-        document.querySelectorAll('.conversation-item').forEach(item => {
-            item.addEventListener('click', async () => {
-                // Remove active state from all conversations
-                document.querySelectorAll('.conversation-item').forEach(i => {
-                    i.classList.remove('bg-gray-100', 'dark:bg-gray-700');
+            // Setup conversation click handlers
+            document.querySelectorAll('.conversation-item').forEach(item => {
+                item.addEventListener('click', async () => {
+                    // Remove active state from all conversations
+                    document.querySelectorAll('.conversation-item').forEach(i => {
+                        i.classList.remove('bg-gray-100', 'dark:bg-gray-700');
+                    });
+                    item.classList.add('bg-gray-100', 'dark:bg-gray-700');
+
+                    const convId = item.dataset.convId;
+                    await DashboardPage.loadMessagesForConversation(convId);
                 });
-                item.classList.add('bg-gray-100', 'dark:bg-gray-700');
-
-                const convId = item.dataset.convId;
-                await DashboardPage.loadMessagesForConversation(convId);
             });
-        });
 
-    } catch (error) {
-        container.innerHTML = `
+        } catch (error) {
+            container.innerHTML = `
             <div class="p-6">
                 <h2 class="text-2xl font-bold text-startup-dark dark:text-white mb-6">Messages</h2>
                 <div class="text-red-500">Failed to load messages: ${error.message}</div>
             </div>
         `;
-    }
-},
+        }
+    },
 
-// Add this helper method:
-loadMessagesForConversation: async function(conversationId) {
-    const messagesView = document.getElementById('messages-view');
-    if (!messagesView) return;
+    // Add this helper method:
+    loadMessagesForConversation: async function (conversationId) {
+        const messagesView = document.getElementById('messages-view');
+        if (!messagesView) return;
 
-    messagesView.innerHTML = `
+        messagesView.innerHTML = `
         <div class="flex-1 flex items-center justify-center text-gray-500 dark:text-gray-400">
             <div class="text-center">
                 <div class="spinner mx-auto mb-4"></div>
@@ -2509,19 +2517,19 @@ loadMessagesForConversation: async function(conversationId) {
         </div>
     `;
 
-    try {
-        const response = await API.getMessages(conversationId);
-        const messages = response.data || [];
+        try {
+            const response = await API.getMessages(conversationId);
+            const messages = response.data || [];
 
-        messagesView.innerHTML = `
+            messagesView.innerHTML = `
             <div class="flex flex-col h-full">
                 <div class="flex-1 overflow-y-auto p-4 space-y-4" id="messages-container">
                     ${messages.map(msg => `
                         <div class="flex ${msg.sender._id === Auth.getCurrentUser()._id ? 'justify-end' : 'justify-start'}">
-                            <div class="max-w-[70%] ${msg.sender._id === Auth.getCurrentUser()._id ? 
-                                'bg-startup-primary text-white' : 
-                                'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
-                            } rounded-lg px-4 py-2 shadow">
+                            <div class="max-w-[70%] ${msg.sender._id === Auth.getCurrentUser()._id ?
+                    'bg-startup-primary text-white' :
+                    'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
+                } rounded-lg px-4 py-2 shadow">
                                 <p class="text-sm">${msg.content}</p>
                                 <p class="text-xs opacity-75 mt-1">
                                     ${new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -2541,36 +2549,36 @@ loadMessagesForConversation: async function(conversationId) {
             </div>
         `;
 
-        // Scroll to bottom
-        const messagesContainer = document.getElementById('messages-container');
-        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            // Scroll to bottom
+            const messagesContainer = document.getElementById('messages-container');
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
 
-        // Setup message form
-        const messageForm = document.getElementById('message-form');
-        messageForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const input = document.getElementById('message-input');
-            const content = input.value.trim();
-            if (!content) return;
-            input.value = '';
-            // Send message
-            try {
-                await API.createMessage({
-                    conversation: conversationId,
-                    receiver: messages.length > 0 ? (messages[0].sender._id === Auth.getCurrentUser()._id ? messages[0].receiver : messages[0].sender._id) : null,
-                    content
-                });
-                // Reload messages
-                await DashboardPage.loadMessagesForConversation(conversationId);
-            } catch (error) {
-                alert(error.message || 'Failed to send message');
-            }
-        });
+            // Setup message form
+            const messageForm = document.getElementById('message-form');
+            messageForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const input = document.getElementById('message-input');
+                const content = input.value.trim();
+                if (!content) return;
+                input.value = '';
+                // Send message
+                try {
+                    await API.createMessage({
+                        conversation: conversationId,
+                        receiver: messages.length > 0 ? (messages[0].sender._id === Auth.getCurrentUser()._id ? messages[0].receiver : messages[0].sender._id) : null,
+                        content
+                    });
+                    // Reload messages
+                    await DashboardPage.loadMessagesForConversation(conversationId);
+                } catch (error) {
+                    alert(error.message || 'Failed to send message');
+                }
+            });
 
-    } catch (error) {
-        messagesView.innerHTML = `<div class="text-red-500 p-4">Failed to load conversation: ${error.message}</div>`;
-    }
-},
+        } catch (error) {
+            messagesView.innerHTML = `<div class="text-red-500 p-4">Failed to load conversation: ${error.message}</div>`;
+        }
+    },
 
     /**
      * Load connections tab content
@@ -2578,32 +2586,32 @@ loadMessagesForConversation: async function(conversationId) {
     /**
  * Load connections tab content
  */
-/**
- * Load connections tab content
- */
-loadConnectionsTabContent: async function() {
-    this.app = this.app || window.app; // Ensure app is defined
-    const container = document.getElementById('connections-tab');
-    if (!container) return;
+    /**
+     * Load connections tab content
+     */
+    loadConnectionsTabContent: async function () {
+        this.app = this.app || window.app; // Ensure app is defined
+        const container = document.getElementById('connections-tab');
+        if (!container) return;
 
-    try {
-        // Fetch connections and requests in parallel
-        const [connectionsResp, requestsResp] = await Promise.all([
-            API.getConnections(),
-            API.getConnectionRequests()
-        ]);
-        const connections = connectionsResp?.data || [];
-        const requests = requestsResp?.data || [];
+        try {
+            // Fetch connections and requests in parallel
+            const [connectionsResp, requestsResp] = await Promise.all([
+                API.getConnections(),
+                API.getConnectionRequests()
+            ]);
+            const connections = connectionsResp?.data || [];
+            const requests = requestsResp?.data || [];
 
-        // Get current user ID
-        const currentUserId = Auth.getCurrentUser()._id;
+            // Get current user ID
+            const currentUserId = Auth.getCurrentUser()._id;
 
-        // Separate incoming and outgoing requests
-        const incomingRequests = requests.filter(req => req.recipient === currentUserId);
-        const outgoingRequests = requests.filter(req => req.sender === currentUserId);
+            // Separate incoming and outgoing requests
+            const incomingRequests = requests.filter(req => req.recipient === currentUserId);
+            const outgoingRequests = requests.filter(req => req.sender === currentUserId);
 
-        // Tab UI
-        container.innerHTML = `
+            // Tab UI
+            container.innerHTML = `
             <div class="p-6">
                 <div class="flex items-center justify-between mb-6">
                     <h2 class="text-2xl font-bold text-startup-dark dark:text-white">Connections</h2>
@@ -2622,8 +2630,8 @@ loadConnectionsTabContent: async function() {
                         ${connections.length > 0 ? `
                             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                                 ${connections.map(connection => {
-                                    const user = connection.user || {};
-                                    return `
+                const user = connection.user || {};
+                return `
                                         <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 flex flex-col">
                                             <div class="flex items-center mb-4">
                                                 <div class="h-12 w-12 rounded-full bg-startup-primary text-white flex items-center justify-center text-xl font-bold">
@@ -2644,7 +2652,7 @@ loadConnectionsTabContent: async function() {
                                             </div>
                                         </div>
                                     `;
-                                }).join('')}
+            }).join('')}
                             </div>
                         ` : `
                             <div class="text-center py-16">
@@ -2665,8 +2673,8 @@ loadConnectionsTabContent: async function() {
                                     </h3>
                                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                                         ${incomingRequests.map(req => {
-                                            const fromUser = req.requester || req.senderUser || {};
-                                            return `
+                const fromUser = req.requester || req.senderUser || {};
+                return `
                                                 <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 flex flex-col">
                                                     <div class="flex items-center mb-4">
                                                         <div class="h-12 w-12 rounded-full bg-startup-primary text-white flex items-center justify-center text-xl font-bold">
@@ -2687,7 +2695,7 @@ loadConnectionsTabContent: async function() {
                                                     </div>
                                                 </div>
                                             `;
-                                        }).join('')}
+            }).join('')}
                                     </div>
                                 </div>
                             ` : ''}
@@ -2698,8 +2706,8 @@ loadConnectionsTabContent: async function() {
                                     </h3>
                                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                                         ${outgoingRequests.map(req => {
-                                            const toUser = req.recipientUser || req.recipient || {};
-                                            return `
+                const toUser = req.recipientUser || req.recipient || {};
+                return `
                                                 <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 flex flex-col">
                                                     <div class="flex items-center mb-4">
                                                         <div class="h-12 w-12 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 flex items-center justify-center text-xl font-bold">
@@ -2715,7 +2723,7 @@ loadConnectionsTabContent: async function() {
                                                     </div>
                                                 </div>
                                             `;
-                                        }).join('')}
+            }).join('')}
                                     </div>
                                 </div>
                             ` : ''}
@@ -2733,37 +2741,37 @@ loadConnectionsTabContent: async function() {
             </div>
         `;
 
-        // Tab switching logic
-        const connectionsTabBtn = document.getElementById('connections-tab-btn');
-        const requestsTabBtn = document.getElementById('requests-tab-btn');
-        const connectionsListView = document.getElementById('connections-list-view');
-        const requestsListView = document.getElementById('requests-list-view');
+            // Tab switching logic
+            const connectionsTabBtn = document.getElementById('connections-tab-btn');
+            const requestsTabBtn = document.getElementById('requests-tab-btn');
+            const connectionsListView = document.getElementById('connections-list-view');
+            const requestsListView = document.getElementById('requests-list-view');
 
-        if (connectionsTabBtn && requestsTabBtn && connectionsListView && requestsListView) {
-            connectionsTabBtn.addEventListener('click', () => {
-                connectionsTabBtn.classList.add('bg-white', 'dark:bg-gray-800', 'border-startup-primary', 'text-startup-primary');
-                connectionsTabBtn.classList.remove('bg-gray-100', 'dark:bg-gray-700', 'border-transparent', 'text-gray-600', 'dark:text-gray-300');
-                requestsTabBtn.classList.remove('bg-white', 'dark:bg-gray-800', 'border-startup-primary', 'text-startup-primary');
-                requestsTabBtn.classList.add('bg-gray-100', 'dark:bg-gray-700', 'border-transparent', 'text-gray-600', 'dark:text-gray-300');
-                connectionsListView.classList.remove('hidden');
-                requestsListView.classList.add('hidden');
-            });
-            requestsTabBtn.addEventListener('click', () => {
-                requestsTabBtn.classList.add('bg-white', 'dark:bg-gray-800', 'border-startup-primary', 'text-startup-primary');
-                requestsTabBtn.classList.remove('bg-gray-100', 'dark:bg-gray-700', 'border-transparent', 'text-gray-600', 'dark:text-gray-300');
-                connectionsTabBtn.classList.remove('bg-white', 'dark:bg-gray-800', 'border-startup-primary', 'text-startup-primary');
-                connectionsTabBtn.classList.add('bg-gray-100', 'dark:bg-gray-700', 'border-transparent', 'text-gray-600', 'dark:text-gray-300');
-                connectionsListView.classList.add('hidden');
-                requestsListView.classList.remove('hidden');
-            });
-        }
+            if (connectionsTabBtn && requestsTabBtn && connectionsListView && requestsListView) {
+                connectionsTabBtn.addEventListener('click', () => {
+                    connectionsTabBtn.classList.add('bg-white', 'dark:bg-gray-800', 'border-startup-primary', 'text-startup-primary');
+                    connectionsTabBtn.classList.remove('bg-gray-100', 'dark:bg-gray-700', 'border-transparent', 'text-gray-600', 'dark:text-gray-300');
+                    requestsTabBtn.classList.remove('bg-white', 'dark:bg-gray-800', 'border-startup-primary', 'text-startup-primary');
+                    requestsTabBtn.classList.add('bg-gray-100', 'dark:bg-gray-700', 'border-transparent', 'text-gray-600', 'dark:text-gray-300');
+                    connectionsListView.classList.remove('hidden');
+                    requestsListView.classList.add('hidden');
+                });
+                requestsTabBtn.addEventListener('click', () => {
+                    requestsTabBtn.classList.add('bg-white', 'dark:bg-gray-800', 'border-startup-primary', 'text-startup-primary');
+                    requestsTabBtn.classList.remove('bg-gray-100', 'dark:bg-gray-700', 'border-transparent', 'text-gray-600', 'dark:text-gray-300');
+                    connectionsTabBtn.classList.remove('bg-white', 'dark:bg-gray-800', 'border-startup-primary', 'text-startup-primary');
+                    connectionsTabBtn.classList.add('bg-gray-100', 'dark:bg-gray-700', 'border-transparent', 'text-gray-600', 'dark:text-gray-300');
+                    connectionsListView.classList.add('hidden');
+                    requestsListView.classList.remove('hidden');
+                });
+            }
 
-        // Setup event listeners for actions
-        this.setupConnectionsEventListeners();
+            // Setup event listeners for actions
+            this.setupConnectionsEventListeners();
 
-    } catch (error) {
-        console.error('Error loading connections:', error);
-        container.innerHTML = `
+        } catch (error) {
+            console.error('Error loading connections:', error);
+            container.innerHTML = `
             <div class="p-6">
                 <h2 class="text-2xl font-bold text-startup-dark dark:text-white mb-6">Connections</h2>
                 <div class="text-center py-16">
@@ -2780,137 +2788,137 @@ loadConnectionsTabContent: async function() {
                 </div>
             </div>
         `;
-        document.getElementById('retry-connections-btn')?.addEventListener('click', () => {
-            this.loadConnectionsTabContent();
-        });
-    }
-},
+            document.getElementById('retry-connections-btn')?.addEventListener('click', () => {
+                this.loadConnectionsTabContent();
+            });
+        }
+    },
 
-/**
- * Setup event listeners for connections tab
- */
-setupConnectionsEventListeners: function() {
-    // Tab switching
-    this.app = this.app || window.app; // Ensure app is defined
-    const connectionsBtn = document.getElementById('connections-tab-btn');
-    const requestsBtn = document.getElementById('requests-tab-btn');
-    const requestsView = document.getElementById('requests-view');
+    /**
+     * Setup event listeners for connections tab
+     */
+    setupConnectionsEventListeners: function () {
+        // Tab switching
+        this.app = this.app || window.app; // Ensure app is defined
+        const connectionsBtn = document.getElementById('connections-tab-btn');
+        const requestsBtn = document.getElementById('requests-tab-btn');
+        const requestsView = document.getElementById('requests-view');
 
-    if (connectionsBtn && requestsBtn && requestsView) {
-        connectionsBtn.addEventListener('click', () => {
-            connectionsBtn.classList.add('text-startup-primary', 'border-startup-primary');
-            requestsBtn.classList.remove('text-startup-primary', 'border-startup-primary');
-            // Show connections list here
-            this.showConnectionsList();
-            requestsView.classList.add('hidden');
-        });
+        if (connectionsBtn && requestsBtn && requestsView) {
+            connectionsBtn.addEventListener('click', () => {
+                connectionsBtn.classList.add('text-startup-primary', 'border-startup-primary');
+                requestsBtn.classList.remove('text-startup-primary', 'border-startup-primary');
+                // Show connections list here
+                this.showConnectionsList();
+                requestsView.classList.add('hidden');
+            });
 
-        requestsBtn.addEventListener('click', () => {
-            requestsBtn.classList.add('text-startup-primary', 'border-startup-primary');
-            connectionsBtn.classList.remove('text-startup-primary', 'border-startup-primary');
-            requestsView.classList.remove('hidden');
-        });
-    }
+            requestsBtn.addEventListener('click', () => {
+                requestsBtn.classList.add('text-startup-primary', 'border-startup-primary');
+                connectionsBtn.classList.remove('text-startup-primary', 'border-startup-primary');
+                requestsView.classList.remove('hidden');
+            });
+        }
 
-    // Accept request buttons
-    document.querySelectorAll('.accept-request-btn').forEach(btn => {
-        btn.addEventListener('click', async () => {
-            const requestId = btn.dataset.requestId;
-            try {
-                await API.acceptConnection(requestId);
-                this.loadConnectionsTabContent(); // Reload the entire tab
-                this.app.showToast('Connection accepted', 'success');
-            } catch (error) {
-                this.app.showToast(error.message || 'Failed to accept connection', 'error');
-            }
-        });
-    });
-
-    // Reject request buttons
-    document.querySelectorAll('.reject-request-btn').forEach(btn => {
-        btn.addEventListener('click', async () => {
-            const requestId = btn.dataset.requestId;
-            try {
-                await API.rejectConnection(requestId);
-                this.loadConnectionsTabContent(); // Reload the entire tab
-                this.app.showToast('Connection request declined', 'success');
-            } catch (error) {
-                this.app.showToast(error.message || 'Failed to decline connection', 'error');
-            }
-        });
-    });
-
-    // Message buttons
-    document.querySelectorAll('.message-btn').forEach(btn => {
-            btn.addEventListener('click', async (e) => {
-                e.preventDefault();
-                const userId = btn.dataset.userId;
-            const messagesTab = document.querySelector('[data-tab="messages"]');
-            if (messagesTab) {
-                messagesTab.click();
-                // Wait for messages tab content to load
-                setTimeout(() => {
-                    // Find and click the conversation item
-                    const conversationItem = document.querySelector(`.conversation-item[data-user-id="${userId}"]`);
-                    if (conversationItem) {
-                        conversationItem.click();
-                    } else {
-                        console.warn('Conversation not found for user:', userId);
-                    }
-                }, 500);
-            }
+        // Accept request buttons
+        document.querySelectorAll('.accept-request-btn').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const requestId = btn.dataset.requestId;
+                try {
+                    await API.acceptConnection(requestId);
+                    this.loadConnectionsTabContent(); // Reload the entire tab
+                    this.app.showToast('Connection accepted', 'success');
+                } catch (error) {
+                    this.app.showToast(error.message || 'Failed to accept connection', 'error');
+                }
             });
         });
 
-    // Add to setupConnectionsEventListeners function
-document.querySelectorAll('.cancel-request-btn').forEach(btn => {
-    btn.addEventListener('click', async () => {
-        const requestId = btn.dataset.requestId;
-        if (confirm('Are you sure you want to cancel this request?')) {
-            try {
-                await API.rejectConnection(requestId);
-                this.loadConnectionsTabContent(); // Reload the entire tab
-                this.app.showToast('Connection request cancelled', 'success');
-            } catch (error) {
-                this.app.showToast(error.message || 'Failed to cancel request', 'error');
-            }
-        }
-    });
-});
-    // Remove connection buttons
-    document.querySelectorAll('.remove-connection-btn').forEach(btn => {
-        btn.addEventListener('click', async () => {
-            const connectionId = btn.dataset.connectionId;
-            if (confirm('Are you sure you want to remove this connection?')) {
+        // Reject request buttons
+        document.querySelectorAll('.reject-request-btn').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const requestId = btn.dataset.requestId;
                 try {
-                    await API.deleteConnection(connectionId);
+                    await API.rejectConnection(requestId);
                     this.loadConnectionsTabContent(); // Reload the entire tab
-                    this.app.showToast('Connection removed', 'success');
+                    this.app.showToast('Connection request declined', 'success');
                 } catch (error) {
-                    this.app.showToast(error.message || 'Failed to remove connection', 'error');
+                    this.app.showToast(error.message || 'Failed to decline connection', 'error');
                 }
-            }
+            });
         });
-    });
-},
-/**
- * Show connections list
- */
-showConnectionsList: async function() {
-    const app = this.app;
-    const container = document.getElementById('connections-tab');
-    if (!container) return;
 
-    try {
-        const connections = await API.getConnections();
-        
-        // Update the container with connections list
-        if (connections && connections.data && connections.data.length > 0) {
-            container.innerHTML = `
+        // Message buttons
+        document.querySelectorAll('.message-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                const userId = btn.dataset.userId;
+                const messagesTab = document.querySelector('[data-tab="messages"]');
+                if (messagesTab) {
+                    messagesTab.click();
+                    // Wait for messages tab content to load
+                    setTimeout(() => {
+                        // Find and click the conversation item
+                        const conversationItem = document.querySelector(`.conversation-item[data-user-id="${userId}"]`);
+                        if (conversationItem) {
+                            conversationItem.click();
+                        } else {
+                            console.warn('Conversation not found for user:', userId);
+                        }
+                    }, 500);
+                }
+            });
+        });
+
+        // Add to setupConnectionsEventListeners function
+        document.querySelectorAll('.cancel-request-btn').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const requestId = btn.dataset.requestId;
+                if (confirm('Are you sure you want to cancel this request?')) {
+                    try {
+                        await API.rejectConnection(requestId);
+                        this.loadConnectionsTabContent(); // Reload the entire tab
+                        this.app.showToast('Connection request cancelled', 'success');
+                    } catch (error) {
+                        this.app.showToast(error.message || 'Failed to cancel request', 'error');
+                    }
+                }
+            });
+        });
+        // Remove connection buttons
+        document.querySelectorAll('.remove-connection-btn').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const connectionId = btn.dataset.connectionId;
+                if (confirm('Are you sure you want to remove this connection?')) {
+                    try {
+                        await API.deleteConnection(connectionId);
+                        this.loadConnectionsTabContent(); // Reload the entire tab
+                        this.app.showToast('Connection removed', 'success');
+                    } catch (error) {
+                        this.app.showToast(error.message || 'Failed to remove connection', 'error');
+                    }
+                }
+            });
+        });
+    },
+    /**
+     * Show connections list
+     */
+    showConnectionsList: async function () {
+        const app = this.app;
+        const container = document.getElementById('connections-tab');
+        if (!container) return;
+
+        try {
+            const connections = await API.getConnections();
+
+            // Update the container with connections list
+            if (connections && connections.data && connections.data.length > 0) {
+                container.innerHTML = `
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     ${connections.data.map(connection => {
-                        const userId = connection.user._id || connection._id;
-                        return `
+                    const userId = connection.user._id || connection._id;
+                    return `
                         <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
                             <div class="flex items-center justify-between mb-4">
                                 <div class="flex items-center">
@@ -2943,8 +2951,8 @@ showConnectionsList: async function() {
                     `}).join('')}
                 </div>
             `;
-        } else {
-            container.innerHTML = `
+            } else {
+                container.innerHTML = `
                 <div class="text-center py-8">
                     <div class="text-gray-400 text-5xl mb-4">
                         <i class="fas fa-user-friends"></i>
@@ -2953,10 +2961,10 @@ showConnectionsList: async function() {
                     <p class="text-gray-600 dark:text-gray-300">Start connecting with other users to grow your network</p>
                 </div>
             `;
-        }
-    } catch (error) {
-        console.error('Error loading connections:', error);
-        container.innerHTML = `
+            }
+        } catch (error) {
+            console.error('Error loading connections:', error);
+            container.innerHTML = `
             <div class="text-center py-8">
                 <div class="text-red-500 text-5xl mb-4">
                     <i class="fas fa-exclamation-circle"></i>
@@ -2965,87 +2973,87 @@ showConnectionsList: async function() {
                 <p class="text-gray-600 dark:text-gray-300">${error.message || 'Failed to load connections'}</p>
             </div>
         `;
-    }
-    // Message buttons
-    document.querySelectorAll('.message-btn').forEach(btn => {
-        btn.addEventListener('click', async (e) => {
-            e.preventDefault();
-            const userId = btn.dataset.userId;
-            const messagesTab = document.querySelector('[data-tab="messages"]');
-        if (messagesTab) {
-            messagesTab.click();
-            // Wait for messages tab content to load
-            setTimeout(() => {
-                // Find and click the conversation item
-                const conversationItem = document.querySelector(`.conversation-item[data-user-id="${userId}"]`);
-                if (conversationItem) {
-                    conversationItem.click();
-                } else {
-                    console.warn('Conversation not found for user:', userId);
+        }
+        // Message buttons
+        document.querySelectorAll('.message-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                const userId = btn.dataset.userId;
+                const messagesTab = document.querySelector('[data-tab="messages"]');
+                if (messagesTab) {
+                    messagesTab.click();
+                    // Wait for messages tab content to load
+                    setTimeout(() => {
+                        // Find and click the conversation item
+                        const conversationItem = document.querySelector(`.conversation-item[data-user-id="${userId}"]`);
+                        if (conversationItem) {
+                            conversationItem.click();
+                        } else {
+                            console.warn('Conversation not found for user:', userId);
+                        }
+                    }, 500);
                 }
-            }, 500);
-        }
-            this.startChat(userId, null, this.app);
+                this.startChat(userId, null, this.app);
+            });
         });
-    });
-},
-/**
- * Start a chat with a connection
- * @param {string} userId - User ID to chat with
- * @param {string} userName - Name of the user
- */
-startChat: async function(userId, userName, app) {
-    if (!userId) {
-        throw new Error('User ID is required to start a chat');
-    }
-    try {
-        await API.startConversation({
-            recipient: userId,
-             message: `Hi${userName ? ` ${userName}` : ''}! I'd like to connect with you.`
-        });
-        
-        // Switch to messages tab
-        const messagesTab = document.querySelector('[data-tab="messages"]');
-        if (messagesTab) {
-            messagesTab.click();
+    },
+    /**
+     * Start a chat with a connection
+     * @param {string} userId - User ID to chat with
+     * @param {string} userName - Name of the user
+     */
+    startChat: async function (userId, userName, app) {
+        if (!userId) {
+            throw new Error('User ID is required to start a chat');
         }
-        
-        app?.showToast('Chat started!', 'success');
-    } catch (error) {
-        app?.showToast(error.message || 'Failed to start chat', 'error');
-        console.error('Error starting chat:', error);
-    }
-},
+        try {
+            await API.startConversation({
+                recipient: userId,
+                message: `Hi${userName ? ` ${userName}` : ''}! I'd like to connect with you.`
+            });
 
-/**
- * Remove a connection
- * @param {string} connectionId - Connection ID to remove
- */
-removeConnection: async function(connectionId) {
-    if (!confirm('Are you sure you want to remove this connection?')) {
-        return;
-    }
+            // Switch to messages tab
+            const messagesTab = document.querySelector('[data-tab="messages"]');
+            if (messagesTab) {
+                messagesTab.click();
+            }
 
-    try {
-        await API.removeConnection(connectionId);
-        this.loadConnectionsTabContent(); // Reload connections
-        //this.loadOverviewTabContent();    // Reload overview to update counts
-        this.app.showToast('Connection removed', 'success');
-    } catch (error) {
-        this.app.showToast(error.message || 'Failed to remove connection', 'error');
-        console.error('Error removing connection:', error);
-    }
-},
+            app?.showToast('Chat started!', 'success');
+        } catch (error) {
+            app?.showToast(error.message || 'Failed to start chat', 'error');
+            console.error('Error starting chat:', error);
+        }
+    },
+
+    /**
+     * Remove a connection
+     * @param {string} connectionId - Connection ID to remove
+     */
+    removeConnection: async function (connectionId) {
+        if (!confirm('Are you sure you want to remove this connection?')) {
+            return;
+        }
+
+        try {
+            await API.removeConnection(connectionId);
+            this.loadConnectionsTabContent(); // Reload connections
+            //this.loadOverviewTabContent();    // Reload overview to update counts
+            this.app.showToast('Connection removed', 'success');
+        } catch (error) {
+            this.app.showToast(error.message || 'Failed to remove connection', 'error');
+            console.error('Error removing connection:', error);
+        }
+    },
 
     /**
      * Load documents tab content
      */
-    loadDocumentsTabContent: async function() {
-    const container = document.getElementById('documents-tab');
-    if (!container) return;
+    loadDocumentsTabContent: async function () {
+        const container = document.getElementById('documents-tab');
+        if (!container) return;
 
-    // Show loading state
-    container.innerHTML = `
+        // Show loading state
+        container.innerHTML = `
         <div class="p-6">
             <h2 class="text-2xl font-bold text-startup-dark dark:text-white mb-6">Documents</h2>
             <div class="py-4 text-center">
@@ -3055,22 +3063,22 @@ removeConnection: async function(connectionId) {
         </div>
     `;
 
-    try {
-        // Fetch documents from API
-        const response = await API.getDocuments();
-        const documents = response.documents || [];
+        try {
+            // Fetch documents from API
+            const response = await API.getDocuments();
+            const documents = response.documents || [];
 
-        if (documents.length === 0) {
-            container.innerHTML = `
+            if (documents.length === 0) {
+                container.innerHTML = `
                 <div class="p-6">
                     <h2 class="text-2xl font-bold text-startup-dark dark:text-white mb-6">Documents</h2>
                     <p class="text-gray-600 dark:text-gray-300">No documents uploaded yet.</p>
                 </div>
             `;
-            return;
-        }
+                return;
+            }
 
-        container.innerHTML = `
+            container.innerHTML = `
             <div class="p-6">
                 <h2 class="text-2xl font-bold text-startup-dark dark:text-white mb-6">Documents</h2>
                 <div class="overflow-x-auto">
@@ -3097,25 +3105,25 @@ removeConnection: async function(connectionId) {
                 </div>
             </div>
         `;
-    } catch (error) {
-        container.innerHTML = `
+        } catch (error) {
+            container.innerHTML = `
             <div class="p-6">
                 <h2 class="text-2xl font-bold text-startup-dark dark:text-white mb-6">Documents</h2>
                 <div class="text-red-500">Failed to load documents: ${error.message}</div>
             </div>
         `;
-    }
-},
+        }
+    },
 
     /**
      * Load portfolio tab content
      */
-    loadPortfolioTabContent: async function() {
-    const container = document.getElementById('portfolio-tab');
-    if (!container) return;
+    loadPortfolioTabContent: async function () {
+        const container = document.getElementById('portfolio-tab');
+        if (!container) return;
 
-    // Show loading state
-    container.innerHTML = `
+        // Show loading state
+        container.innerHTML = `
         <div class="p-6">
             <h2 class="text-2xl font-bold text-startup-dark dark:text-white mb-6">Portfolio</h2>
             <div class="py-4 text-center">
@@ -3125,19 +3133,19 @@ removeConnection: async function(connectionId) {
         </div>
     `;
 
-    try {
-        // Fetch portfolio from API
-        const response = await API.getPortfolio();
-        const portfolio = response.portfolio || [];
+        try {
+            // Fetch portfolio from API
+            const response = await API.getPortfolio();
+            const portfolio = response.portfolio || [];
 
-        // Add Company Button and Modal
-        const addCompanyBtn = `
+            // Add Company Button and Modal
+            const addCompanyBtn = `
             <button id="add-portfolio-company-btn" class="mb-6 px-4 py-2 bg-startup-primary text-white rounded-md hover:bg-opacity-90">
                 <i class="fas fa-plus mr-2"></i>Add Company
             </button>
         `;
 
-        const addCompanyModal = `
+            const addCompanyModal = `
             <div id="add-company-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 hidden">
                 <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8 w-full max-w-lg max-h-[60vh] overflow-y-auto">
                     <h3 class="text-xl font-bold mb-4 text-startup-dark dark:text-white">Add Portfolio Company</h3>
@@ -3183,12 +3191,12 @@ removeConnection: async function(connectionId) {
             </div>
         `;
 
-        // Portfolio List
-        let portfolioHtml = '';
-        if (portfolio.length === 0) {
-            portfolioHtml = `<p class="text-gray-600 dark:text-gray-300">No portfolio companies added yet.</p>`;
-        } else {
-            portfolioHtml = `
+            // Portfolio List
+            let portfolioHtml = '';
+            if (portfolio.length === 0) {
+                portfolioHtml = `<p class="text-gray-600 dark:text-gray-300">No portfolio companies added yet.</p>`;
+            } else {
+                portfolioHtml = `
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                     ${portfolio.map(company => `
                         <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 flex flex-col">
@@ -3218,9 +3226,9 @@ removeConnection: async function(connectionId) {
                     `).join('')}
                 </div>
             `;
-        }
+            }
 
-        container.innerHTML = `
+            container.innerHTML = `
             <div class="p-6">
                 <h2 class="text-2xl font-bold text-startup-dark dark:text-white mb-6">Portfolio</h2>
                 ${addCompanyBtn}
@@ -3229,60 +3237,60 @@ removeConnection: async function(connectionId) {
             ${addCompanyModal}
         `;
 
-        // Show modal on button click
-        document.getElementById('add-portfolio-company-btn').onclick = () => {
-            document.getElementById('add-company-modal').classList.remove('hidden');
-        };
-        // Hide modal on cancel
-        document.getElementById('cancel-add-company-btn').onclick = () => {
-            document.getElementById('add-company-modal').classList.add('hidden');
-        };
-
-        // Handle form submission
-        document.getElementById('add-company-form').onsubmit = async (e) => {
-            e.preventDefault();
-            const form = e.target;
-            const formData = new FormData(form);
-            const data = {};
-            formData.forEach((value, key) => {
-                data[key] = value;
-            });
-            // Convert numeric fields
-            if (data.investmentAmount) data.investmentAmount = parseFloat(data.investmentAmount);
-            if (data.year) data.year = parseInt(data.year);
-
-            try {
-                await API.addPortfolioCompany(data);
-                this.app?.showToast('Portfolio company added!', 'success');
+            // Show modal on button click
+            document.getElementById('add-portfolio-company-btn').onclick = () => {
+                document.getElementById('add-company-modal').classList.remove('hidden');
+            };
+            // Hide modal on cancel
+            document.getElementById('cancel-add-company-btn').onclick = () => {
                 document.getElementById('add-company-modal').classList.add('hidden');
-                this.loadPortfolioTabContent(); // Refresh list
-            } catch (error) {
-                this.app?.showToast(error.message || 'Failed to add company', 'error');
-            }
-        };
+            };
 
-    } catch (error) {
-        container.innerHTML = `
+            // Handle form submission
+            document.getElementById('add-company-form').onsubmit = async (e) => {
+                e.preventDefault();
+                const form = e.target;
+                const formData = new FormData(form);
+                const data = {};
+                formData.forEach((value, key) => {
+                    data[key] = value;
+                });
+                // Convert numeric fields
+                if (data.investmentAmount) data.investmentAmount = parseFloat(data.investmentAmount);
+                if (data.year) data.year = parseInt(data.year);
+
+                try {
+                    await API.addPortfolioCompany(data);
+                    this.app?.showToast('Portfolio company added!', 'success');
+                    document.getElementById('add-company-modal').classList.add('hidden');
+                    this.loadPortfolioTabContent(); // Refresh list
+                } catch (error) {
+                    this.app?.showToast(error.message || 'Failed to add company', 'error');
+                }
+            };
+
+        } catch (error) {
+            container.innerHTML = `
             <div class="p-6">
                 <h2 class="text-2xl font-bold text-startup-dark dark:text-white mb-6">Portfolio</h2>
                 <div class="text-red-500">Failed to load portfolio: ${error.message}</div>
             </div>
         `;
-    }
-},
+        }
+    },
 
     /**
      * Load analytics tab content
      */
-    loadAnalyticsTabContent: async function() {
-    const container = document.getElementById('analytics-tab');
-    if (!container) return;
+    loadAnalyticsTabContent: async function () {
+        const container = document.getElementById('analytics-tab');
+        if (!container) return;
 
-    // Show loading state
+        // Show loading state
 
-    // Add a line chart container for Total Revenue (Funding Raised) over time
-    // This will be rendered below the main metrics cards
-    container.innerHTML = `
+        // Add a line chart container for Total Revenue (Funding Raised) over time
+        // This will be rendered below the main metrics cards
+        container.innerHTML = `
         <div class="p-6">
             <h2 class="text-2xl font-bold text-startup-dark dark:text-white mb-6">Analytics</h2>
             <div class="py-4 text-center">
@@ -3292,33 +3300,33 @@ removeConnection: async function(connectionId) {
         </div>
     `;
 
-    try {
-        // Fetch analytics data (from profile or API)
-        const user = Auth.getCurrentUser();
-        let analytics = {};
-        let isStartup = user.userType === 'startup';
+        try {
+            // Fetch analytics data (from profile or API)
+            const user = Auth.getCurrentUser();
+            let analytics = {};
+            let isStartup = user.userType === 'startup';
 
-        // Prefer profile.stats if available, else fallback to API
-        let profile = null;
-        if (isStartup) {
-            const resp = await API.getStartupByUserId(user._id);
-            profile = resp.startup;
-            analytics = profile.stats || {};
-            analytics.revenue = profile.fundingAmount || 0;
-        } else {
-            const resp = await API.getAnalytics();
-            analytics = resp.analytics || resp.data || {};
-        }
+            // Prefer profile.stats if available, else fallback to API
+            let profile = null;
+            if (isStartup) {
+                const resp = await API.getStartupByUserId(user._id);
+                profile = resp.startup;
+                analytics = profile.stats || {};
+                analytics.revenue = profile.fundingAmount || 0;
+            } else {
+                const resp = await API.getAnalytics();
+                analytics = resp.analytics || resp.data || {};
+            }
 
-        // Fallbacks for missing fields
-        const profileViews = analytics.profileViews ?? analytics.views ?? 0;
-        const connections = analytics.connections ?? 0;
-        const messages = analytics.messages ?? 0;
-        const matchScore = analytics.matchScore ?? '-';
-        const revenue = analytics.revenue ?? 0;
+            // Fallbacks for missing fields
+            const profileViews = analytics.profileViews ?? analytics.views ?? 0;
+            const connections = analytics.connections ?? 0;
+            const messages = analytics.messages ?? 0;
+            const matchScore = analytics.matchScore ?? '-';
+            const revenue = analytics.revenue ?? 0;
 
-        // Main metrics cards
-        let cardsHtml = `
+            // Main metrics cards
+            let cardsHtml = `
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-4 dashboard-card">
                 <div class="flex items-center">
@@ -3371,8 +3379,8 @@ removeConnection: async function(connectionId) {
             </div>
         `;
 
-        // Revenue card (using fundingAmount)
-        let revenueHtml = `
+            // Revenue card (using fundingAmount)
+            let revenueHtml = `
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                 <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-4 dashboard-card">
                     <div class="flex items-center">
@@ -3388,8 +3396,8 @@ removeConnection: async function(connectionId) {
             </div>
         `;
 
-        // Chart containers
-        let chartsHtml = `
+            // Chart containers
+            let chartsHtml = `
             <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
                 <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
                     <h3 class="text-lg font-bold text-startup-dark dark:text-white mb-4">Engagement Overview</h3>
@@ -3402,8 +3410,8 @@ removeConnection: async function(connectionId) {
             </div>
         `;
 
-        // Overview section
-        let overviewHtml = `
+            // Overview section
+            let overviewHtml = `
             <div class="mt-8">
                 <h3 class="text-lg font-bold text-startup-dark dark:text-white mb-4">Analytics Overview</h3>
                 <ul class="space-y-2 text-sm">
@@ -3416,8 +3424,8 @@ removeConnection: async function(connectionId) {
             </div>
         `;
 
-        // Render analytics content
-        container.innerHTML = `
+            // Render analytics content
+            container.innerHTML = `
             <div class="p-6">
                 <h2 class="text-2xl font-bold text-startup-dark dark:text-white mb-6">Analytics</h2>
                 ${cardsHtml}
@@ -3427,145 +3435,145 @@ removeConnection: async function(connectionId) {
             </div>
         `;
 
-        // --- Chart.js: Render charts ---
-        // Make sure Chart.js is loaded (add <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> in your HTML)
+            // --- Chart.js: Render charts ---
+            // Make sure Chart.js is loaded (add <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> in your HTML)
 
-        // Bar chart for engagement
-        const barCtx = document.getElementById('engagement-bar-chart').getContext('2d');
-        new Chart(barCtx, {
-            type: 'bar',
-            data: {
-                labels: ['Profile Views', 'Connections', 'Messages'],
-                datasets: [{
-                    label: 'Count',
-                    data: [profileViews, connections, messages],
-                    backgroundColor: [
-                        'rgba(99, 102, 241, 0.7)',
-                        'rgba(16, 185, 129, 0.7)',
-                        'rgba(59, 130, 246, 0.7)'
-                    ],
-                    borderRadius: 8
-                }]
-            },
-            options: {
-                plugins: {
-                    legend: { display: false }
+            // Bar chart for engagement
+            const barCtx = document.getElementById('engagement-bar-chart').getContext('2d');
+            new Chart(barCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Profile Views', 'Connections', 'Messages'],
+                    datasets: [{
+                        label: 'Count',
+                        data: [profileViews, connections, messages],
+                        backgroundColor: [
+                            'rgba(99, 102, 241, 0.7)',
+                            'rgba(16, 185, 129, 0.7)',
+                            'rgba(59, 130, 246, 0.7)'
+                        ],
+                        borderRadius: 8
+                    }]
                 },
-                scales: {
-                    y: { beginAtZero: true, ticks: { stepSize: 1 } }
+                options: {
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, ticks: { stepSize: 1 } }
+                    }
+                }
+            });
+
+            // --- Revenue Line Chart ---
+            // Use dummy data if profile.revenueHistory is not available
+            let revenueLabels = [];
+            let revenueData = [];
+            if (profile && Array.isArray(profile.revenueHistory) && profile.revenueHistory.length > 0) {
+                // profile.revenueHistory should be [{date: '2023-01', amount: 10000}, ...]
+                revenueLabels = profile.revenueHistory.map(item => item.date);
+                revenueData = profile.revenueHistory.map(item => item.amount);
+            } else {
+                // Fallback: generate last 6 months with static/fake data
+                const now = new Date();
+                for (let i = 5; i >= 0; i--) {
+                    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+                    revenueLabels.push(d.toLocaleString('default', { month: 'short', year: '2-digit' }));
+                    // For demo, show a simple ramp up to current revenue
+                    revenueData.push(Math.round(revenue * ((6 - i) / 6)));
                 }
             }
-        });
-
-        // --- Revenue Line Chart ---
-        // Use dummy data if profile.revenueHistory is not available
-        let revenueLabels = [];
-        let revenueData = [];
-        if (profile && Array.isArray(profile.revenueHistory) && profile.revenueHistory.length > 0) {
-            // profile.revenueHistory should be [{date: '2023-01', amount: 10000}, ...]
-            revenueLabels = profile.revenueHistory.map(item => item.date);
-            revenueData = profile.revenueHistory.map(item => item.amount);
-        } else {
-            // Fallback: generate last 6 months with static/fake data
-            const now = new Date();
-            for (let i = 5; i >= 0; i--) {
-                const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-                revenueLabels.push(d.toLocaleString('default', { month: 'short', year: '2-digit' }));
-                // For demo, show a simple ramp up to current revenue
-                revenueData.push(Math.round(revenue * ((6 - i) / 6)));
-            }
-        }
-        const revenueLineCtx = document.getElementById('revenue-line-chart').getContext('2d');
-        new Chart(revenueLineCtx, {
-            type: 'line',
-            data: {
-                labels: revenueLabels,
-                datasets: [{
-                    label: 'Total Revenue (USD)',
-                    data: revenueData,
-                    fill: true,
-                    borderColor: 'rgba(99, 102, 241, 1)',
-                    backgroundColor: 'rgba(99, 102, 241, 0.1)',
-                    tension: 0.3,
-                    pointRadius: 4,
-                    pointBackgroundColor: 'rgba(99, 102, 241, 1)'
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: { display: false }
+            const revenueLineCtx = document.getElementById('revenue-line-chart').getContext('2d');
+            new Chart(revenueLineCtx, {
+                type: 'line',
+                data: {
+                    labels: revenueLabels,
+                    datasets: [{
+                        label: 'Total Revenue (USD)',
+                        data: revenueData,
+                        fill: true,
+                        borderColor: 'rgba(99, 102, 241, 1)',
+                        backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                        tension: 0.3,
+                        pointRadius: 4,
+                        pointBackgroundColor: 'rgba(99, 102, 241, 1)'
+                    }]
                 },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            callback: function(value) {
-                                return '$' + value.toLocaleString();
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function (value) {
+                                    return '$' + value.toLocaleString();
+                                }
                             }
                         }
                     }
                 }
-            }
-        });
+            });
 
-        // Doughnut chart for match score
-        const doughnutCtx = document.getElementById('match-doughnut-chart').getContext('2d');
-        let matchValue = parseFloat(matchScore);
-        if (isNaN(matchValue)) matchValue = 0;
-        new Chart(doughnutCtx, {
-            type: 'doughnut',
-            data: {
-                labels: ['Match Score', 'Remaining'],
-                datasets: [{
-                    data: [matchValue, 10 - matchValue],
-                    backgroundColor: [
-                        'rgba(251, 191, 36, 0.9)',
-                        'rgba(229, 231, 235, 0.5)'
-                    ],
-                    borderWidth: 2
-                }]
-            },
-            options: {
-                cutout: '70%',
-                plugins: {
-                    legend: { display: false },
-                    tooltip: { enabled: false },
-                    // Show score in center
-                    beforeDraw: function(chart) {
-                        const width = chart.width,
-                            height = chart.height,
-                            ctx = chart.ctx;
-                        ctx.restore();
-                        const fontSize = (height / 114).toFixed(2);
-                        ctx.font = fontSize + "em sans-serif";
-                        ctx.textBaseline = "middle";
-                        const text = matchValue + "/10",
-                            textX = Math.round((width - ctx.measureText(text).width) / 2),
-                            textY = height / 2;
-                        ctx.fillText(text, textX, textY);
-                        ctx.save();
+            // Doughnut chart for match score
+            const doughnutCtx = document.getElementById('match-doughnut-chart').getContext('2d');
+            let matchValue = parseFloat(matchScore);
+            if (isNaN(matchValue)) matchValue = 0;
+            new Chart(doughnutCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Match Score', 'Remaining'],
+                    datasets: [{
+                        data: [matchValue, 10 - matchValue],
+                        backgroundColor: [
+                            'rgba(251, 191, 36, 0.9)',
+                            'rgba(229, 231, 235, 0.5)'
+                        ],
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    cutout: '70%',
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { enabled: false },
+                        // Show score in center
+                        beforeDraw: function (chart) {
+                            const width = chart.width,
+                                height = chart.height,
+                                ctx = chart.ctx;
+                            ctx.restore();
+                            const fontSize = (height / 114).toFixed(2);
+                            ctx.font = fontSize + "em sans-serif";
+                            ctx.textBaseline = "middle";
+                            const text = matchValue + "/10",
+                                textX = Math.round((width - ctx.measureText(text).width) / 2),
+                                textY = height / 2;
+                            ctx.fillText(text, textX, textY);
+                            ctx.save();
+                        }
                     }
                 }
-            }
-        });
+            });
 
-    } catch (error) {
-        container.innerHTML = `
+        } catch (error) {
+            container.innerHTML = `
             <div class="p-6">
                 <h2 class="text-2xl font-bold text-startup-dark dark:text-white mb-6">Analytics</h2>
                 <div class="text-red-500">Failed to load analytics: ${error.message}</div>
             </div>
         `;
-    }
-},
+        }
+    },
 
     /**
      * Set up startup dashboard event listeners
      * @param {App} app - Main application instance
      * @param {Object} profile - Startup profile data
      */
-    setupStartupDashboardEventListeners: function(app, profile) {
+    setupStartupDashboardEventListeners: function (app, profile) {
         // Dashboard navigation handled by setupDashboardTabs
         this.app = app;
         // Complete profile button
@@ -3576,7 +3584,7 @@ removeConnection: async function(connectionId) {
                 document.querySelector('.dashboard-nav[data-tab="profile"]')?.click();
             });
         }
-        
+
         // View all investors button
         const viewAllInvestorsBtn = document.getElementById('view-all-investors-btn');
         if (viewAllInvestorsBtn) {
@@ -3585,12 +3593,12 @@ removeConnection: async function(connectionId) {
                 app.navigateTo('investors');
             });
         }
-        
+
         // Connect with investor buttons
         document.querySelectorAll('.investor-connect-btn').forEach(btn => {
             btn.addEventListener('click', async (e) => {
                 const investorId = e.target.dataset.id;
-                
+
                 // Show loading state
                 const originalText = e.target.innerHTML;
                 e.target.innerHTML = `
@@ -3598,14 +3606,14 @@ removeConnection: async function(connectionId) {
                     Connecting...
                 `;
                 e.target.disabled = true;
-                
+
                 try {
                     // Send connection request
                     await API.sendConnectionRequest(investorId);
-                    
+
                     // Show success message
                     app.showToast('Connection request sent!', 'success');
-                    
+
                     // Update button
                     e.target.innerHTML = `<i class="fas fa-check mr-1"></i> Sent`;
                     e.target.classList.remove('bg-startup-primary');
@@ -3615,14 +3623,14 @@ removeConnection: async function(connectionId) {
                     // Show error
                     app.showToast(error.message || 'Failed to send connection request', 'error');
                     console.error('Error sending connection request:', error);
-                    
+
                     // Restore button
                     e.target.innerHTML = originalText;
                     e.target.disabled = false;
                 }
             });
         });
-        
+
         // Investor details buttons
         document.querySelectorAll('.investor-details-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
@@ -3630,7 +3638,7 @@ removeConnection: async function(connectionId) {
                 InvestorsPage.showInvestorDetails(investorId);
             });
         });
-        
+
         // Retry suggestions button
         const retrySuggestionsBtn = document.getElementById('retry-suggestions-btn');
         if (retrySuggestionsBtn) {
@@ -3639,13 +3647,13 @@ removeConnection: async function(connectionId) {
             });
         }
     },
-    
+
     /**
      * Set up investor dashboard event listeners
      * @param {App} app - Main application instance
      * @param {Object} profile - Investor profile data
      */
-    setupInvestorDashboardEventListeners: function(app, profile) {
+    setupInvestorDashboardEventListeners: function (app, profile) {
         // Dashboard navigation handled by setupDashboardTabs
         this.app = app;
         // Complete profile button
@@ -3656,7 +3664,7 @@ removeConnection: async function(connectionId) {
                 document.querySelector('.dashboard-nav[data-tab="profile"]')?.click();
             });
         }
-        
+
         // View all startups button
         const viewAllStartupsBtn = document.getElementById('view-all-startups-btn');
         if (viewAllStartupsBtn) {
@@ -3665,12 +3673,12 @@ removeConnection: async function(connectionId) {
                 app.navigateTo('startups');
             });
         }
-        
+
         // Connect with startup buttons
         document.querySelectorAll('.startup-connect-btn').forEach(btn => {
             btn.addEventListener('click', async (e) => {
                 const startupId = e.target.dataset.id;
-                
+
                 // Show loading state
                 const originalText = e.target.innerHTML;
                 e.target.innerHTML = `
@@ -3678,14 +3686,14 @@ removeConnection: async function(connectionId) {
                     Connecting...
                 `;
                 e.target.disabled = true;
-                
+
                 try {
                     // Send connection request
                     await API.sendConnectionRequest(startupId);
-                    
+
                     // Show success message
                     app.showToast('Connection request sent!', 'success');
-                    
+
                     // Update button
                     e.target.innerHTML = `<i class="fas fa-check mr-1"></i> Sent`;
                     e.target.classList.remove('bg-startup-primary');
@@ -3695,14 +3703,14 @@ removeConnection: async function(connectionId) {
                     // Show error
                     app.showToast(error.message || 'Failed to send connection request', 'error');
                     console.error('Error sending connection request:', error);
-                    
+
                     // Restore button
                     e.target.innerHTML = originalText;
                     e.target.disabled = false;
                 }
             });
         });
-        
+
         // Startup details buttons
         document.querySelectorAll('.startup-details-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
@@ -3710,7 +3718,7 @@ removeConnection: async function(connectionId) {
                 StartupsPage.showStartupDetails(startupId);
             });
         });
-        
+
         // Retry suggestions button
         const retryStartupSuggestionsBtn = document.getElementById('retry-startup-suggestions-btn');
         if (retryStartupSuggestionsBtn) {
@@ -3719,7 +3727,7 @@ removeConnection: async function(connectionId) {
             });
         }
     },
-    
+
     // Additional tab content loading methods would be implemented here
     // (loadMessagesTabContent, loadConnectionsTabContent, etc.)
 };

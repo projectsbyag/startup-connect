@@ -111,21 +111,22 @@ exports.getStartupByUserId = async (req, res, next) => {
         const startup = await Startup.findOne({ userId });
 
         if (!startup) {
-            return res.status(404).json({
-                success: false,
-                message: 'Startup profile not found'
+            // No startup profile yet, return minimal response
+            return res.status(200).json({
+                success: true,
+                startup: null
             });
         }
 
         // --- Stats calculation ---
         const profileViews = startup.views || 0;
         const connections = await Connection.countDocuments({
-                    status: 'accepted',
-                    $or: [
-                        { requester: startup.userId },
-                        { recipient: startup.userId }
-                    ]
-                });
+            status: 'accepted',
+            $or: [
+                { requester: startup.userId },
+                { recipient: startup.userId }
+            ]
+        });
         const conversations = await Conversation.find({ participants: userId });
         const conversationIds = conversations.map(c => c._id);
         const messages = await Message.countDocuments({ conversation: { $in: conversationIds } });
@@ -142,7 +143,6 @@ exports.getStartupByUserId = async (req, res, next) => {
                     matchScore
                 },
                 revenueHistory: startup.revenueHistory || []
-            
             }
         });
     } catch (error) {

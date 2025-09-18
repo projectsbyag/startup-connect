@@ -18,7 +18,15 @@ connectDB();
 const app = express();
 
 // Middleware
-app.use(cors());
+const corsOptions = {
+  origin: [
+    'http://localhost:3000',                    // local dev
+    'http://127.0.0.1:5500',                    // local static server (if used)
+    'https://your-vercel-app.vercel.app'        // replace with your actual Vercel URL
+  ],
+  credentials: true
+};
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
@@ -26,6 +34,10 @@ app.use(express.urlencoded({ extended: false }));
 if (process.env.NODE_ENV !== 'production') {
     app.use(require('morgan')('dev'));
 }
+
+app.get('/api/health', (req, res) => {
+  res.json({ success: true, status: 'ok', uptime: process.uptime() });
+});
 
 // API Routes
 app.use('/api/users', require('./routes/users.js'));

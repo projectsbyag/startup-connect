@@ -4,7 +4,7 @@
 class ApiService {
     constructor() {
         // API base URL - change this to your actual backend URL in production
-        this.baseUrl = 'http://localhost:5000/api';
+        this.baseUrl = 'https://startupconnect-cjb9h4gka8cuhebt.southafricanorth-01.azurewebsites.net/api';
         this.token = localStorage.getItem('token') || null;
     }
 
@@ -230,10 +230,19 @@ class ApiService {
     }
     async createStartup(startupData) {
     try {
-        // First check if user already has a startup profile
-        const existingStartup = await this.get('/startups/user/current');
-        
-        if (existingStartup.success && existingStartup.data) {
+        let existingStartup = null;
+        try {
+            existingStartup = await this.get('/startups/user/current');
+        } catch (error) {
+            // Only log unexpected errors
+            if (!error.message.includes('No startup profile found')) {
+                console.error('API Error:', error);
+                throw error;
+            }
+            // Suppress "No startup profile found" error
+        }
+
+        if (existingStartup && existingStartup.success && existingStartup.data) {
             // Update existing profile
             const response = await this.put(`/startups/${existingStartup.data._id}`, startupData);
             if (!response.success) {
@@ -246,7 +255,7 @@ class ApiService {
             if (!response.success) {
                 throw new Error(response.message || 'Failed to create startup');
             }
-            return response.data;
+            return response.startup || response.data;
         }
     } catch (error) {
         console.error('API Error:', error);
