@@ -18,17 +18,25 @@ class AuthService {
      * Wait for API to be available
      */
     async waitForAPI() {
-        return new Promise((resolve) => {
-            if (typeof window.API !== 'undefined') {
+        return new Promise((resolve, reject) => {
+            if (typeof window.API !== 'undefined' && window.API) {
                 resolve();
-            } else {
-                const checkAPI = setInterval(() => {
-                    if (typeof window.API !== 'undefined') {
-                        clearInterval(checkAPI);
-                        resolve();
-                    }
-                }, 10);
+                return;
             }
+            
+            let attempts = 0;
+            const maxAttempts = 500; // 5 seconds max wait
+            
+            const checkAPI = setInterval(() => {
+                attempts++;
+                if (typeof window.API !== 'undefined' && window.API) {
+                    clearInterval(checkAPI);
+                    resolve();
+                } else if (attempts >= maxAttempts) {
+                    clearInterval(checkAPI);
+                    reject(new Error('API failed to load within timeout'));
+                }
+            }, 10);
         });
     }
 
@@ -48,6 +56,7 @@ class AuthService {
      */
     async fetchCurrentUser() {
         try {
+            await this.waitForAPI();
             const userData = await window.API.getCurrentUser();
             this.setUser(userData);
         } catch (error) {
@@ -73,6 +82,8 @@ class AuthService {
      */
     async register(userData) {
         try {
+            // Ensure API is available
+            await this.waitForAPI();
             const result = await window.API.register(userData);
             window.API.setToken(result.token);
             this.setUser(result.user);
@@ -90,6 +101,8 @@ class AuthService {
      */
     async login(credentials) {
         try {
+            // Ensure API is available
+            await this.waitForAPI();
             const result = await window.API.login(credentials);
             window.API.setToken(result.token);
             this.setUser(result.user);
@@ -103,7 +116,8 @@ class AuthService {
     /**
      * Logout the current user
      */
-    logout() {
+    async logout() {
+        await this.waitForAPI();
         window.API.setToken(null);
         this.setUser(null);
     }
@@ -183,6 +197,14 @@ class AuthService {
     }
 }
 
-// Create and export Auth instance
-const Auth = new AuthService();
-window.Auth = Auth;
+// Create and export Auth instance - wait for DOM to be ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+        const Auth = new AuthService();
+        window.Auth = Auth;
+    });
+} else {
+    // DOM is already ready
+    const Auth = new AuthService();
+    window.Auth = Auth;
+}
