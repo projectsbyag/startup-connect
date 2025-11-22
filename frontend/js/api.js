@@ -4,8 +4,8 @@
 class ApiService {
     constructor() {
         // API base URL - change this to your actual backend URL in production
-        this.baseUrl = process.env.NEXT_PUBLIC_API_URL 
-            ? `${process.env.NEXT_PUBLIC_API_URL}/api`
+        this.baseUrl = process.env.PUBLIC_API_URL 
+            ? `${process.env.PUBLIC_API_URL}/api`
             : 'https://startup-connect-7y5d.onrender.com/api';
         this.token = localStorage.getItem('token') || null;
     }
