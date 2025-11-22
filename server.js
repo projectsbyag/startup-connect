@@ -47,7 +47,7 @@ app.use('/api/investors', require('./routes/investors.js'));
 app.use('/api/messages', require('./routes/messages.js'));
 app.use('/api/connections', require('./routes/connections.js'));
 
-// Serve static assets in production
+/* Serve static assets in production
 if (process.env.NODE_ENV === 'production') {
     app.use(express.static(path.join(__dirname, '../frontend')));
     
@@ -55,7 +55,7 @@ if (process.env.NODE_ENV === 'production') {
         res.sendFile(path.resolve(__dirname, '../frontend', 'index.html'));
     });
 }
-
+*/
 // Error handler middleware
 app.use(errorHandler);
 
