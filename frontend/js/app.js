@@ -1,5 +1,3 @@
-import ProfilePage from './profile.js';
-import SettingsPage from './settings.js';
 /**
  * Main Application
  */

@@ -1,6 +1,7 @@
 /**
  * Authentication Service - Handles user authentication and session management
  */
+
 class AuthService {
     constructor() {
         this.user = null;

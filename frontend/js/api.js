@@ -526,3 +526,4 @@ async getStartupOpportunities() {
 }
 // Create and export API instance
 const API = new ApiService();
+window.API = API;
