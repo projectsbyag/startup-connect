@@ -8,8 +8,28 @@ class AuthService {
         this.isAuthenticated = false;
         this.authListeners = [];
         
-        // Initialize auth state from local storage
-        this.initAuthState();
+        //wait for API to be available before initializing
+        this.waitForAPI().then(() => {
+            this.initAuthState();
+        });
+    }
+    
+    /**
+     * Wait for API to be available
+     */
+    async waitForAPI() {
+        return new Promise((resolve) => {
+            if (typeof window.API !== 'undefined') {
+                resolve();
+            } else {
+                const checkAPI = setInterval(() => {
+                    if (typeof window.API !== 'undefined') {
+                        clearInterval(checkAPI);
+                        resolve();
+                    }
+                }, 10);
+            }
+        });
     }
     
     /**
@@ -165,3 +185,4 @@ class AuthService {
 
 // Create and export Auth instance
 const Auth = new AuthService();
+window.Auth = Auth;
