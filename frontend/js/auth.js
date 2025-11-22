@@ -31,7 +31,7 @@ class AuthService {
             }
         });
     }
-    
+
     /**
      * Initialize authentication state from localStorage
      */
@@ -48,7 +48,7 @@ class AuthService {
      */
     async fetchCurrentUser() {
         try {
-            const userData = await API.getCurrentUser();
+            const userData = await window.API.getCurrentUser();
             this.setUser(userData);
         } catch (error) {
             console.error('Failed to fetch current user:', error);
@@ -73,8 +73,8 @@ class AuthService {
      */
     async register(userData) {
         try {
-            const result = await API.register(userData);
-            API.setToken(result.token);
+            const result = await window.API.register(userData);
+            window.API.setToken(result.token);
             this.setUser(result.user);
             return result;
         } catch (error) {
@@ -90,8 +90,8 @@ class AuthService {
      */
     async login(credentials) {
         try {
-            const result = await API.login(credentials);
-            API.setToken(result.token);
+            const result = await window.API.login(credentials);
+            window.API.setToken(result.token);
             this.setUser(result.user);
             return result;
         } catch (error) {
@@ -104,7 +104,7 @@ class AuthService {
      * Logout the current user
      */
     logout() {
-        API.setToken(null);
+        window.API.setToken(null);
         this.setUser(null);
     }
     
@@ -159,7 +159,7 @@ class AuthService {
      */
     async updateProfile(userData) {
         try {
-            const updatedUser = await API.updateProfile(userData);
+            const updatedUser = await window.API.updateProfile(userData);
             this.setUser(updatedUser);
             return updatedUser;
         } catch (error) {
@@ -175,7 +175,7 @@ class AuthService {
      */
     async changePassword(passwordData) {
         try {
-            return await API.changePassword(passwordData);
+            return await window.API.changePassword(passwordData);
         } catch (error) {
             console.error('Password change failed:', error);
             throw error;
