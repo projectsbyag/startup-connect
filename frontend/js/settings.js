@@ -257,5 +257,3 @@ document.getElementById('profile-form')?.addEventListener('submit', async (e) =>
         });
     }
 };
-
-export default SettingsPage;
