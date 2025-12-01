@@ -197,14 +197,6 @@ class AuthService {
     }
 }
 
-// Create and export Auth instance - wait for DOM to be ready
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-        const Auth = new AuthService();
-        window.Auth = Auth;
-    });
-} else {
-    // DOM is already ready
-    const Auth = new AuthService();
-    window.Auth = Auth;
-}
+// Create and export Auth instance immediately
+const Auth = new AuthService();
+window.Auth = Auth;

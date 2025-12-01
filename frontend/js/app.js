@@ -15,7 +15,10 @@ class App {
     /**
      * Initialize the application
      */
-    init() {
+    async init() {
+        // Wait for Auth to be available
+        await this.waitForAuth();
+        
         // Check URL hash for page
         const hash = window.location.hash.substring(1);
         if (hash) {
@@ -28,7 +31,46 @@ class App {
         this.setupEventListeners();
         
         // Listen for authentication changes
+        await this.waitForAuth();
         Auth.addAuthListener(this.handleAuthChange.bind(this));
+    }
+    
+    /**
+     * Wait for Auth to be available
+     */
+    async waitForAuth() {
+        return new Promise((resolve) => {
+            if (typeof window.Auth !== 'undefined' && window.Auth) {
+                resolve();
+                return;
+            }
+            
+            const checkAuth = setInterval(() => {
+                if (typeof window.Auth !== 'undefined' && window.Auth) {
+                    clearInterval(checkAuth);
+                    resolve();
+                }
+            }, 10);
+        });
+    }
+    
+    /**
+     * Wait for Auth to be available
+     */
+    async waitForAuth() {
+        return new Promise((resolve) => {
+            if (typeof window.Auth !== 'undefined' && window.Auth) {
+                resolve();
+                return;
+            }
+            
+            const checkAuth = setInterval(() => {
+                if (typeof window.Auth !== 'undefined' && window.Auth) {
+                    clearInterval(checkAuth);
+                    resolve();
+                }
+            }, 10);
+        });
     }
     
     /**
@@ -213,6 +255,7 @@ class App {
         document.getElementById('login-submit-btn').disabled = true;
         
         try {
+            await this.waitForAuth();
             await Auth.login({ email, password });
 
            document.dispatchEvent(new Event('user:login'));
@@ -267,6 +310,7 @@ class App {
         document.getElementById('signup-submit-btn').disabled = true;
         
         try {
+            await this.waitForAuth();
             await Auth.register({
                 name,
                 email,
@@ -299,7 +343,8 @@ class App {
     /**
      * Logout the current user
      */
-    logout() {
+    async logout() {
+        await this.waitForAuth();
         Auth.logout();
         
         // Show success message
@@ -409,7 +454,7 @@ class App {
         
         // Check auth requirements
         const authRequired = ['dashboard', 'profile', 'settings'];
-        if (authRequired.includes(page) && !Auth.isUserAuthenticated()) {
+        if (authRequired.includes(page) && window.Auth && !Auth.isUserAuthenticated()) {
             // Redirect to login if auth required but not logged in
             this.showToast('Please log in to access this page', 'info');
             document.getElementById('login-modal').classList.remove('hidden');
@@ -510,7 +555,7 @@ class App {
         
         if (heroStartupBtn) {
             heroStartupBtn.addEventListener('click', () => {
-                if (Auth.isUserAuthenticated()) {
+                if (window.Auth && Auth.isUserAuthenticated()) {
                     this.navigateTo('dashboard');
                 } else {
                     document.getElementById('signup-modal').classList.remove('hidden');
@@ -521,7 +566,7 @@ class App {
         
         if (heroInvestorBtn) {
             heroInvestorBtn.addEventListener('click', () => {
-                if (Auth.isUserAuthenticated()) {
+                if (window.Auth && Auth.isUserAuthenticated()) {
                     this.navigateTo('dashboard');
                 } else {
                     document.getElementById('signup-modal').classList.remove('hidden');
@@ -534,7 +579,7 @@ class App {
         const registerStartupBtn = document.getElementById('register-startup-btn');
         if (registerStartupBtn) {
             registerStartupBtn.addEventListener('click', () => {
-                if (Auth.isUserAuthenticated()) {
+                if (window.Auth && Auth.isUserAuthenticated()) {
                     this.navigateTo('dashboard');
                 } else {
                     document.getElementById('signup-modal').classList.remove('hidden');
@@ -546,7 +591,7 @@ class App {
         const registerInvestorBtn = document.getElementById('register-investor-btn');
         if (registerInvestorBtn) {
             registerInvestorBtn.addEventListener('click', () => {
-                if (Auth.isUserAuthenticated()) {
+                if (window.Auth && Auth.isUserAuthenticated()) {
                     this.navigateTo('dashboard');
                 } else {
                     document.getElementById('signup-modal').classList.remove('hidden');
@@ -559,7 +604,7 @@ class App {
         const ctaSignupBtn = document.getElementById('cta-signup-btn');
         if (ctaSignupBtn) {
             ctaSignupBtn.addEventListener('click', () => {
-                if (Auth.isUserAuthenticated()) {
+                if (window.Auth && Auth.isUserAuthenticated()) {
                     this.navigateTo('dashboard');
                 } else {
                     document.getElementById('signup-modal').classList.remove('hidden');

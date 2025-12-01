@@ -22,8 +22,10 @@ const corsOptions = {
   origin: [
     'http://localhost:3000',
     'http://127.0.0.1:5500',
-    'https://startup-connect-one.vercel.app', // Remove the double slash
-    'https://*.vercel.app' // Allow all Vercel preview deployments
+    'https://startup-connect-one.vercel.app',
+    'https://startup-connect.netlify.app', // Add your Netlify domain
+    'https://*.vercel.app', // Allow all Vercel preview deployments
+    'https://*.netlify.app' // Allow all Netlify deployments
   ],
   credentials: true
 };
