@@ -679,9 +679,8 @@ class App {
 }
 
 // Initialize app
-document.addEventListener('DOMContentLoaded', () => {
-    const app = new App();
-});
+const app = new App();
+
 // Import page modules
 
 // Page Templates object - imported from separate files
