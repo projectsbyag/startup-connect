@@ -18,21 +18,29 @@ class AuthService {
      * Wait for API to be available
      */
     async waitForAPI() {
+        console.log('Waiting for API to be available...');
+        console.log('Current window.API:', typeof window.API, window.API);
+        
         return new Promise((resolve, reject) => {
             if (typeof window.API !== 'undefined' && window.API) {
+                console.log('API is already available');
                 resolve();
                 return;
             }
             
             let attempts = 0;
-            const maxAttempts = 500; // 5 seconds max wait
+            const maxAttempts = 100; // Reduce to 1 second max wait
             
             const checkAPI = setInterval(() => {
                 attempts++;
+                console.log(`Checking API availability, attempt ${attempts}`);
+                
                 if (typeof window.API !== 'undefined' && window.API) {
+                    console.log('API is now available');
                     clearInterval(checkAPI);
                     resolve();
                 } else if (attempts >= maxAttempts) {
+                    console.error('API failed to load. Available globals:', Object.keys(window).filter(k => k.includes('API')));
                     clearInterval(checkAPI);
                     reject(new Error('API failed to load within timeout'));
                 }
@@ -197,6 +205,21 @@ class AuthService {
     }
 }
 
+// Ensure API is available before creating Auth
+if (typeof window.API === 'undefined') {
+    console.warn('API not found, scripts may be loading out of order');
+    // Create a simple fallback
+    window.API = {
+        baseUrl: 'https://startup-connect-7y5d.onrender.com/api',
+        login: () => Promise.reject(new Error('API not properly initialized')),
+        register: () => Promise.reject(new Error('API not properly initialized')),
+        setToken: () => {},
+        getCurrentUser: () => Promise.reject(new Error('API not properly initialized'))
+    };
+}
+
 // Create and export Auth instance immediately
+console.log('Creating Auth instance...');
 const Auth = new AuthService();
 window.Auth = Auth;
+console.log('Auth instance created and assigned to window.Auth:', !!window.Auth);

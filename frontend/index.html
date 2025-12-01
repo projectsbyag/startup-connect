@@ -391,6 +391,17 @@
     </footer>
 
     <!-- Scripts -->
+    <script>
+        // Debug script loading
+        console.log('Starting script loading...');
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('DOM loaded. Available globals:', {
+                API: typeof window.API,
+                Auth: typeof window.Auth,
+                App: typeof window.App
+            });
+        });
+    </script>
     <script src="js/api.js"></script>
     <script src="js/auth.js"></script>
     <script src="js/dashboard.js"></script>

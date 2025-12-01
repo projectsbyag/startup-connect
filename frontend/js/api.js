@@ -4,10 +4,11 @@
 class ApiService {
     constructor() {
         // API base URL - change this to your actual backend URL in production
-        this.baseUrl = process.env.PUBLIC_API_URL 
-            ? `${process.env.PUBLIC_API_URL}/api`
-            : 'https://startup-connect-7y5d.onrender.com/api';
+        this.baseUrl = 'https://startup-connect-7y5d.onrender.com/api';
         this.token = localStorage.getItem('token') || null;
+        
+        // Debug: Log API initialization
+        console.log('API Service initialized with baseUrl:', this.baseUrl);
     }
 
     /**
@@ -524,6 +525,9 @@ async getStartupOpportunities() {
     return this.get('/investors/user/startup-opportunities');
 }
 }
+
 // Create and export API instance
+console.log('Creating API instance...');
 const API = new ApiService();
 window.API = API;
+console.log('API instance created and assigned to window.API:', !!window.API);
