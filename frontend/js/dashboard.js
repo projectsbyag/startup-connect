@@ -30,6 +30,7 @@ const DashboardPage = {
             `;
         }
 
+        
         // Get user data
         const user = Auth.getCurrentUser();
 
