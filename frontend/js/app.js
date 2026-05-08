@@ -692,21 +692,64 @@ const PageTemplates = {
                 <div class="max-w-7xl mx-auto">
                     <div class="relative z-10 pt-14 lg:w-full">
                         <div class="mx-auto max-w-7xl px-4 py-14 sm:px-6 sm:py-24 lg:px-8">
-                            <div class="mx-auto max-w-2xl lg:mx-0 lg:max-w-xl">
-                                <h1 class="text-4xl font-bold tracking-tight text-startup-dark dark:text-white sm:text-6xl">
-                                    Connect. Invest. Grow.
-                                </h1>
-                                <p class="mt-6 text-lg leading-8 text-gray-600 dark:text-gray-300">
-                                    StartupConnect bridges the gap between innovative startups and forward-thinking investors. 
-                                    Revolutionizing fundraising in Nigeria and beyond.
-                                </p>
-                                <div class="mt-10 flex items-center gap-x-6">
-                                    <button id="hero-startup-btn" class="rounded-md bg-startup-primary px-6 py-3 text-base font-semibold text-white shadow-sm hover:bg-opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2">
-                                        I'm a Startup
-                                    </button>
-                                    <button id="hero-investor-btn" class="rounded-md bg-white dark:bg-startup-dark border border-startup-primary px-6 py-3 text-base font-semibold text-startup-primary shadow-sm hover:bg-gray-100 dark:hover:bg-gray-800">
-                                        I'm an Investor
-                                    </button>
+                            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+                                <div class="max-w-2xl lg:mx-0 lg:max-w-xl">
+                                    <h1 class="text-4xl font-bold tracking-tight text-startup-dark dark:text-white sm:text-6xl">
+                                        Connect. Invest. Grow.
+                                    </h1>
+                                    <p class="mt-6 text-lg leading-8 text-gray-600 dark:text-gray-300">
+                                        StartupConnect bridges the gap between innovative startups and forward-thinking investors. 
+                                        Revolutionizing fundraising in Nigeria and beyond.
+                                    </p>
+                                    <div class="mt-10 flex items-center gap-x-6">
+                                        <button id="hero-startup-btn" class="rounded-md bg-startup-primary px-6 py-3 text-base font-semibold text-white shadow-sm hover:bg-opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2">
+                                            I'm a Startup
+                                        </button>
+                                        <button id="hero-investor-btn" class="rounded-md bg-white dark:bg-startup-dark border border-startup-primary px-6 py-3 text-base font-semibold text-startup-primary shadow-sm hover:bg-gray-100 dark:hover:bg-gray-800">
+                                            I'm an Investor
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="hidden lg:flex justify-center items-center">
+                                    <svg class="w-full h-auto max-w-md" viewBox="0 0 400 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <!-- Background circle -->
+                                        <circle cx="200" cy="200" r="190" fill="#f5f3ff" stroke="#ddd6fe" stroke-width="2"/>
+                                        
+                                        <!-- Network nodes -->
+                                        <circle cx="100" cy="120" r="25" fill="#8b5cf6" opacity="0.8"/>
+                                        <circle cx="200" cy="80" r="20" fill="#7c3aed"/>
+                                        <circle cx="300" cy="120" r="22" fill="#a78bfa"/>
+                                        <circle cx="150" cy="220" r="20" fill="#c4b5fd"/>
+                                        <circle cx="250" cy="240" r="23" fill="#7c3aed"/>
+                                        <circle cx="200" cy="300" r="21" fill="#8b5cf6" opacity="0.9"/>
+                                        
+                                        <!-- Connection lines between nodes -->
+                                        <line x1="100" y1="120" x2="200" y2="80" stroke="#ddd6fe" stroke-width="2"/>
+                                        <line x1="200" y1="80" x2="300" y2="120" stroke="#ddd6fe" stroke-width="2"/>
+                                        <line x1="100" y1="120" x2="150" y2="220" stroke="#ddd6fe" stroke-width="2"/>
+                                        <line x1="300" y1="120" x2="250" y2="240" stroke="#ddd6fe" stroke-width="2"/>
+                                        <line x1="150" y1="220" x2="200" y2="300" stroke="#ddd6fe" stroke-width="2"/>
+                                        <line x1="250" y1="240" x2="200" y2="300" stroke="#ddd6fe" stroke-width="2"/>
+                                        
+                                        <!-- Growth arrow 1 (bottom left to top) -->
+                                        <path d="M 80 280 L 80 200 L 70 210 M 80 200 L 90 210" stroke="#5D5CDE" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                                        
+                                        <!-- Growth arrow 2 (bottom right to top) -->
+                                        <path d="M 320 280 L 320 200 L 310 210 M 320 200 L 330 210" stroke="#FF6B6B" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                                        
+                                        <!-- Center investment icon -->
+                                        <g transform="translate(200, 200)">
+                                            <rect x="-15" y="-15" width="30" height="30" fill="#4ECDC4" rx="3"/>
+                                            <path d="M -5 -3 L 5 -3 L 8 3 L -8 3 Z" fill="white" stroke="white" stroke-width="0.5"/>
+                                            <circle cx="-3" cy="0" r="1.5" fill="white"/>
+                                            <circle cx="3" cy="0" r="1.5" fill="white"/>
+                                        </g>
+                                        
+                                        <!-- Floating labels -->
+                                        <text x="45" y="130" font-size="12" font-weight="bold" fill="#5D5CDE" text-anchor="middle">Connect</text>
+                                        <text x="355" y="130" font-size="12" font-weight="bold" fill="#FF6B6B" text-anchor="middle">Grow</text>
+                                        <text x="200" y="350" font-size="12" font-weight="bold" fill="#4ECDC4" text-anchor="middle">Invest</text>
+                                    </svg>
                                 </div>
                             </div>
                         </div>
