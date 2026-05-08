@@ -62,7 +62,7 @@
     <!-- Main container -->
     <div id="app-container">
         <!-- Navigation -->
-        <nav class="bg-white dark:bg-startup-dark shadow-md sticky top-0 z-50">
+        <nav class="bg-white/80 dark:bg-startup-dark/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800 shadow-sm sticky top-0 z-50">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="flex justify-between h-16">
                     <div class="flex">
@@ -70,7 +70,7 @@
                             <span class="text-startup-primary text-2xl font-bold">StartupConnect</span>
                         </div>
                         <div class="hidden sm:ml-6 sm:flex sm:space-x-8">
-                            <a href="#" class="nav-link border-startup-primary text-startup-primary inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium" data-page="home">
+                            <a href="#" class="nav-link border-transparent text-gray-500 dark:text-gray-300 hover:text-startup-primary dark:hover:text-startup-primary hover:border-startup-primary inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium" data-page="home">
                                 Home
                             </a>
                             <a href="#" class="nav-link border-transparent text-gray-500 dark:text-gray-300 hover:text-startup-primary dark:hover:text-startup-primary hover:border-startup-primary inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium" data-page="startups">
@@ -85,10 +85,10 @@
                         </div>
                     </div>
                     <div id="auth-buttons" class="hidden sm:ml-6 sm:flex sm:items-center">
-                        <button id="login-btn" class="px-4 py-2 mr-2 rounded-md text-startup-primary border border-startup-primary hover:bg-startup-primary hover:text-white transition-colors">
+                        <button id="login-btn" class="px-4 py-2 mr-2 rounded-md text-startup-primary border border-startup-primary transition-all duration-200 hover:scale-105 hover:bg-startup-primary hover:text-white hover:shadow-lg hover:shadow-startup-primary/20">
                             Log in
                         </button>
-                        <button id="signup-btn" class="px-4 py-2 rounded-md bg-startup-primary text-white hover:bg-opacity-90 transition-colors">
+                        <button id="signup-btn" class="px-4 py-2 rounded-md bg-startup-primary text-white transition-all duration-200 hover:scale-105 hover:shadow-lg hover:shadow-startup-primary/25">
                             Sign up
                         </button>
                     </div>
@@ -136,10 +136,10 @@
                 </div>
                 <div id="mobile-auth-buttons" class="pt-4 pb-3 border-t border-gray-200 dark:border-gray-700">
                     <div class="flex items-center px-4">
-                        <button id="mobile-login-btn" class="flex-shrink-0 w-full block px-4 py-2 text-center text-sm font-medium text-startup-primary border border-startup-primary rounded-md hover:bg-startup-primary hover:text-white transition-colors mb-2">
+                            <button id="mobile-login-btn" class="flex-shrink-0 w-full block px-4 py-2 text-center text-sm font-medium text-startup-primary border border-startup-primary rounded-md transition-all duration-200 hover:scale-[1.02] hover:bg-startup-primary hover:text-white hover:shadow-lg hover:shadow-startup-primary/20 mb-2">
                             Log in
                         </button>
-                        <button id="mobile-signup-btn" class="flex-shrink-0 w-full block px-4 py-2 text-center text-sm font-medium text-white bg-startup-primary rounded-md hover:bg-opacity-90 transition-colors">
+                        <button id="mobile-signup-btn" class="flex-shrink-0 w-full block px-4 py-2 text-center text-sm font-medium text-white bg-startup-primary rounded-md transition-all duration-200 hover:scale-[1.02] hover:shadow-lg hover:shadow-startup-primary/25">
                             Sign up
                         </button>
                     </div>
