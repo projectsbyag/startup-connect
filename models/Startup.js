@@ -153,6 +153,10 @@ const StartupSchema = new mongoose.Schema({
     toObject: { virtuals: true }
 });
 
+// Indexes for performance
+StartupSchema.index({ industry: 1, funding: 1 });
+StartupSchema.index({ createdAt: -1 });
+
 // Update the "updatedAt" field on save
 StartupSchema.pre('save', function(next) {
     this.updatedAt = Date.now();

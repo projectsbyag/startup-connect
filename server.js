@@ -9,13 +9,13 @@ const errorHandler = require('./middleware/errorHandler.js');
 // Load environment variables
 dotenv.config();
 
-// Connect to database
-// Connect to database
-connectDB();
-
+const compression = require('compression');
 
 // Initialize Express
 const app = express();
+
+// Enable Gzip/Brotli Compression
+app.use(compression());
 
 // Middleware
 const corsOptions = {
@@ -35,7 +35,7 @@ app.use(express.urlencoded({ extended: false }));
 
 // Enable Morgan logging in development
 if (process.env.NODE_ENV !== 'production') {
-    app.use(require('morgan')('dev'));
+  app.use(require('morgan')('dev'));
 }
 
 app.get('/api/health', (req, res) => {
@@ -61,8 +61,14 @@ if (process.env.NODE_ENV === 'production') {
 // Error handler middleware
 app.use(errorHandler);
 
-// Start server
+// Start server after connecting to DB
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
+
+const startServer = async () => {
+  await connectDB();
+  app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
-});
+  });
+};
+
+startServer();

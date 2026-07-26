@@ -19,6 +19,9 @@ class App {
         // Wait for Auth to be available
         await this.waitForAuth();
         
+        // Update Auth UI state
+        this.updateAuthUI();
+
         // Check URL hash for page
         const hash = window.location.hash.substring(1);
         if (hash) {
@@ -56,8 +59,63 @@ class App {
      * Handle authentication state changes
      */
     handleAuthChange() {
-        // Reload current page if authentication state changes
+        this.updateAuthUI();
         this.loadPage(this.currentPage);
+    }
+
+    /**
+     * Update Navbar UI according to Auth State
+     */
+    updateAuthUI() {
+        const isAuthenticated = Auth && Auth.isUserAuthenticated();
+        const user = Auth ? Auth.getCurrentUser() : null;
+
+        const authButtons = document.getElementById('auth-buttons');
+        const userMenuContainer = document.getElementById('user-menu-container');
+        const mobileAuthButtons = document.getElementById('mobile-auth-buttons');
+        const mobileUserMenu = document.getElementById('mobile-user-menu');
+
+        const userInitials = document.getElementById('user-initials');
+        const mobileUserInitials = document.getElementById('mobile-user-initials');
+        const mobileUserName = document.getElementById('mobile-user-name');
+        const mobileUserEmail = document.getElementById('mobile-user-email');
+
+        if (isAuthenticated && user) {
+            // Hide login & signup buttons
+            if (authButtons) {
+                authButtons.classList.add('hidden');
+                authButtons.classList.remove('sm:flex');
+            }
+            if (mobileAuthButtons) mobileAuthButtons.classList.add('hidden');
+
+            // Show user profile menu
+            if (userMenuContainer) {
+                userMenuContainer.classList.remove('hidden');
+                userMenuContainer.classList.add('sm:flex');
+            }
+            if (mobileUserMenu) mobileUserMenu.classList.remove('hidden');
+
+            // Set user initials & details
+            const initials = user.name ? user.name.split(' ').map(n => n[0]).join('').toUpperCase() : '<i class="fas fa-user"></i>';
+            if (userInitials) userInitials.innerHTML = initials;
+            if (mobileUserInitials) mobileUserInitials.innerHTML = initials;
+            if (mobileUserName) mobileUserName.textContent = user.name || 'User';
+            if (mobileUserEmail) mobileUserEmail.textContent = user.email || '';
+        } else {
+            // Show login & signup buttons
+            if (authButtons) {
+                authButtons.classList.remove('hidden');
+                authButtons.classList.add('sm:flex');
+            }
+            if (mobileAuthButtons) mobileAuthButtons.classList.remove('hidden');
+
+            // Hide user profile menu
+            if (userMenuContainer) {
+                userMenuContainer.classList.add('hidden');
+                userMenuContainer.classList.remove('sm:flex');
+            }
+            if (mobileUserMenu) mobileUserMenu.classList.add('hidden');
+        }
     }
     
     /**
@@ -68,6 +126,27 @@ class App {
         // Update URL hash
         window.location.hash = page;
         this.loadPage(page);
+    }
+    
+    showLoginModal() {
+        const loginModal = document.getElementById('login-modal');
+        const signupModal = document.getElementById('signup-modal');
+        if (signupModal) signupModal.classList.add('hidden');
+        if (loginModal) loginModal.classList.remove('hidden');
+    }
+
+    showSignupModal() {
+        const loginModal = document.getElementById('login-modal');
+        const signupModal = document.getElementById('signup-modal');
+        if (loginModal) loginModal.classList.add('hidden');
+        if (signupModal) signupModal.classList.remove('hidden');
+    }
+
+    hideModals() {
+        const loginModal = document.getElementById('login-modal');
+        const signupModal = document.getElementById('signup-modal');
+        if (loginModal) loginModal.classList.add('hidden');
+        if (signupModal) signupModal.classList.add('hidden');
     }
     
     /**
@@ -117,10 +196,10 @@ class App {
         document.querySelectorAll('.nav-link, .mobile-nav-link').forEach(link => {
             const linkPage = link.getAttribute('data-page');
             if (linkPage === page) {
-                link.classList.add('border-startup-primary', 'text-startup-primary', 'bg-startup-primary');
-                link.classList.remove('border-transparent', 'text-gray-500', 'dark:text-gray-300');
+                link.classList.add('border-startup-primary', 'text-startup-primary', 'font-semibold');
+                link.classList.remove('border-transparent', 'text-gray-500', 'dark:text-gray-300', 'bg-startup-primary');
             } else {
-                link.classList.remove('border-startup-primary', 'text-startup-primary', 'bg-startup-primary');
+                link.classList.remove('border-startup-primary', 'text-startup-primary', 'font-semibold', 'bg-startup-primary');
                 link.classList.add('border-transparent', 'text-gray-500', 'dark:text-gray-300');
             }
         });
@@ -131,7 +210,7 @@ class App {
      */
     setupEventListeners() {
         // Nav link listeners
-        document.querySelectorAll('.nav-link, .mobile-nav-link').forEach(link => {
+        document.querySelectorAll('.nav-link, .mobile-nav-link, .footer-nav').forEach(link => {
             link.addEventListener('click', (e) => {
                 e.preventDefault();
                 const page = link.getAttribute('data-page');
@@ -139,16 +218,217 @@ class App {
             });
         });
         
+        // Auth modal helper functions
+        const loginModal = document.getElementById('login-modal');
+        const signupModal = document.getElementById('signup-modal');
+
+        const showLoginModal = () => {
+            if (signupModal) signupModal.classList.add('hidden');
+            if (loginModal) loginModal.classList.remove('hidden');
+        };
+
+        const showSignupModal = () => {
+            if (loginModal) loginModal.classList.add('hidden');
+            if (signupModal) signupModal.classList.remove('hidden');
+        };
+
+        const hideModals = () => {
+            if (loginModal) loginModal.classList.add('hidden');
+            if (signupModal) signupModal.classList.add('hidden');
+        };
+
+        // User Profile Dropdown Toggle
+        const userMenuButton = document.getElementById('user-menu-button');
+        const userDropdownMenu = document.getElementById('user-dropdown-menu');
+
+        if (userMenuButton && userDropdownMenu) {
+            userMenuButton.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                userDropdownMenu.classList.toggle('hidden');
+            });
+
+            document.addEventListener('click', (e) => {
+                if (!userMenuButton.contains(e.target) && !userDropdownMenu.contains(e.target)) {
+                    userDropdownMenu.classList.add('hidden');
+                }
+            });
+        }
+
+        // Profile Menu Links Navigation
+        const profileLink = document.getElementById('profile-link');
+        const dashboardLink = document.getElementById('dashboard-link');
+        const settingsLink = document.getElementById('settings-link');
+        const logoutLink = document.getElementById('logout-link');
+
+        const mobileProfileLink = document.getElementById('mobile-profile-link');
+        const mobileDashboardLink = document.getElementById('mobile-dashboard-link');
+        const mobileSettingsLink = document.getElementById('mobile-settings-link');
+        const mobileLogoutLink = document.getElementById('mobile-logout-link');
+
+        const handleUserNav = (page) => {
+            if (userDropdownMenu) userDropdownMenu.classList.add('hidden');
+            this.navigateTo(page);
+        };
+
+        const handleLogout = async () => {
+            if (userDropdownMenu) userDropdownMenu.classList.add('hidden');
+            await Auth.logout();
+            this.showToast('Logged out successfully', 'info');
+            this.navigateTo('home');
+        };
+
+        if (profileLink) profileLink.addEventListener('click', (e) => { e.preventDefault(); handleUserNav('profile'); });
+        if (dashboardLink) dashboardLink.addEventListener('click', (e) => { e.preventDefault(); handleUserNav('dashboard'); });
+        if (settingsLink) settingsLink.addEventListener('click', (e) => { e.preventDefault(); handleUserNav('settings'); });
+        if (logoutLink) logoutLink.addEventListener('click', (e) => { e.preventDefault(); handleLogout(); });
+
+        if (mobileProfileLink) mobileProfileLink.addEventListener('click', (e) => { e.preventDefault(); handleUserNav('profile'); });
+        if (mobileDashboardLink) mobileDashboardLink.addEventListener('click', (e) => { e.preventDefault(); handleUserNav('dashboard'); });
+        if (mobileSettingsLink) mobileSettingsLink.addEventListener('click', (e) => { e.preventDefault(); handleUserNav('settings'); });
+        if (mobileLogoutLink) mobileLogoutLink.addEventListener('click', (e) => { e.preventDefault(); handleLogout(); });
+
         // Auth button listeners
         const loginBtn = document.getElementById('login-btn');
         const signupBtn = document.getElementById('signup-btn');
         const mobileLoginBtn = document.getElementById('mobile-login-btn');
         const mobileSignupBtn = document.getElementById('mobile-signup-btn');
         
-        if (loginBtn) loginBtn.addEventListener('click', () => document.getElementById('login-modal').classList.remove('hidden'));
-        if (signupBtn) signupBtn.addEventListener('click', () => document.getElementById('signup-modal').classList.remove('hidden'));
-        if (mobileLoginBtn) mobileLoginBtn.addEventListener('click', () => document.getElementById('login-modal').classList.remove('hidden'));
-        if (mobileSignupBtn) mobileSignupBtn.addEventListener('click', () => document.getElementById('signup-modal').classList.remove('hidden'));
+        if (loginBtn) loginBtn.addEventListener('click', showLoginModal);
+        if (signupBtn) signupBtn.addEventListener('click', showSignupModal);
+        if (mobileLoginBtn) mobileLoginBtn.addEventListener('click', showLoginModal);
+        if (mobileSignupBtn) mobileSignupBtn.addEventListener('click', showSignupModal);
+
+        // Modal Close buttons (X exit buttons)
+        document.querySelectorAll('.login-close-btn').forEach(btn => {
+            btn.addEventListener('click', hideModals);
+        });
+
+        document.querySelectorAll('.signup-close-btn').forEach(btn => {
+            btn.addEventListener('click', hideModals);
+        });
+
+        // Switch between login and signup modals
+        const switchToSignup = document.getElementById('switch-to-signup');
+        const switchToLogin = document.getElementById('switch-to-login');
+
+        if (switchToSignup) {
+            switchToSignup.addEventListener('click', (e) => {
+                e.preventDefault();
+                showSignupModal();
+            });
+        }
+
+        if (switchToLogin) {
+            switchToLogin.addEventListener('click', (e) => {
+                e.preventDefault();
+                showLoginModal();
+            });
+        }
+
+        // Close modal on backdrop click
+        if (loginModal) {
+            loginModal.addEventListener('click', (e) => {
+                if (e.target === loginModal || e.target.classList.contains('opacity-75')) {
+                    hideModals();
+                }
+            });
+        }
+
+        if (signupModal) {
+            signupModal.addEventListener('click', (e) => {
+                if (e.target === signupModal || e.target.classList.contains('opacity-75')) {
+                    hideModals();
+                }
+            });
+        }
+
+        // Close on Escape key press
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                hideModals();
+            }
+        });
+
+        // Login form submission handler
+        const loginForm = document.getElementById('login-form');
+        if (loginForm) {
+            loginForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const emailInput = document.getElementById('email');
+                const passwordInput = document.getElementById('password');
+                const submitBtn = document.getElementById('login-submit-btn');
+                const btnText = document.getElementById('login-btn-text');
+                const spinner = document.getElementById('login-spinner');
+
+                if (!emailInput || !passwordInput) return;
+
+                const email = emailInput.value.trim();
+                const password = passwordInput.value;
+
+                try {
+                    if (submitBtn) submitBtn.disabled = true;
+                    if (btnText) btnText.textContent = 'Signing in...';
+                    if (spinner) spinner.classList.remove('hidden');
+
+                    await Auth.login({ email, password });
+
+                    hideModals();
+                    loginForm.reset();
+                    this.showToast('Successfully logged in!', 'success');
+                    this.navigateTo('dashboard');
+                } catch (error) {
+                    console.error('Login submit error:', error);
+                    this.showToast(error.message || 'Login failed. Please check your credentials.', 'error');
+                } finally {
+                    if (submitBtn) submitBtn.disabled = false;
+                    if (btnText) btnText.textContent = 'Sign in';
+                    if (spinner) spinner.classList.add('hidden');
+                }
+            });
+        }
+
+        // Signup form submission handler
+        const signupForm = document.getElementById('signup-form');
+        if (signupForm) {
+            signupForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const nameInput = document.getElementById('name');
+                const emailInput = document.getElementById('signup-email');
+                const passwordInput = document.getElementById('signup-password');
+                const accountTypeInput = document.querySelector('input[name="account-type"]:checked');
+                const submitBtn = document.getElementById('signup-submit-btn');
+                const btnText = document.getElementById('signup-btn-text');
+                const spinner = document.getElementById('signup-spinner');
+
+                if (!nameInput || !emailInput || !passwordInput) return;
+
+                const name = nameInput.value.trim();
+                const email = emailInput.value.trim();
+                const password = passwordInput.value;
+                const role = accountTypeInput ? accountTypeInput.value : 'startup';
+
+                try {
+                    if (submitBtn) submitBtn.disabled = true;
+                    if (btnText) btnText.textContent = 'Creating account...';
+                    if (spinner) spinner.classList.remove('hidden');
+
+                    await Auth.register({ name, email, password, userType: role, role });
+
+                    hideModals();
+                    signupForm.reset();
+                    this.showToast('Account created successfully!', 'success');
+                    this.navigateTo('dashboard');
+                } catch (error) {
+                    console.error('Signup submit error:', error);
+                    this.showToast(error.message || 'Registration failed. Please try again.', 'error');
+                } finally {
+                    if (submitBtn) submitBtn.disabled = false;
+                    if (btnText) btnText.textContent = 'Create account';
+                    if (spinner) spinner.classList.add('hidden');
+                }
+            });
+        }
         
         // Mobile menu toggle
         const mobileMenuBtn = document.getElementById('mobile-menu-btn');
@@ -594,43 +874,248 @@ const PageTemplates = {
     },
 
     startups: function() {
-        return `<div class="min-h-[70vh] flex items-center justify-center"><p>Startups page</p></div>`;
+        return typeof StartupsPage !== 'undefined' ? StartupsPage.render() : `<div class="p-12 text-center">Startups Page Loading...</div>`;
     },
 
     investors: function() {
-        return `<div class="min-h-[70vh] flex items-center justify-center"><p>Investors page</p></div>`;
-    },
-
-    about: function() {
-        return `<div class="min-h-[70vh] flex items-center justify-center"><p>About page</p></div>`;
+        return typeof InvestorsPage !== 'undefined' ? InvestorsPage.render() : `<div class="p-12 text-center">Investors Page Loading...</div>`;
     },
 
     dashboard: function() {
-        return `<div class="min-h-[70vh] flex items-center justify-center"><p>Dashboard page</p></div>`;
+        return typeof DashboardPage !== 'undefined' ? DashboardPage.render() : `<div class="p-12 text-center">Dashboard Loading...</div>`;
     },
 
     profile: function() {
-        return `<div class="min-h-[70vh] flex items-center justify-center"><p>Profile page</p></div>`;
+        return typeof ProfilePage !== 'undefined' ? ProfilePage.render() : `<div class="p-12 text-center">Profile Loading...</div>`;
     },
 
     settings: function() {
-        return `<div class="min-h-[70vh] flex items-center justify-center"><p>Settings page</p></div>`;
+        return typeof SettingsPage !== 'undefined' ? SettingsPage.render() : `<div class="p-12 text-center">Settings Loading...</div>`;
+    },
+
+    about: function() {
+        return `
+            <div class="bg-white dark:bg-startup-dark py-12 sm:py-16">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div class="text-center max-w-3xl mx-auto">
+                        <span class="text-startup-primary font-semibold text-sm uppercase tracking-wider">Our Story</span>
+                        <h1 class="mt-2 text-3xl sm:text-5xl font-extrabold text-startup-dark dark:text-white">Connecting Africa's Next Tech Giants with Capital</h1>
+                        <p class="mt-4 text-lg text-gray-600 dark:text-gray-300">
+                            StartupConnect was built to democratize fundraising across emerging markets by giving founders direct visibility to qualified, verified investors.
+                        </p>
+                    </div>
+
+                    <div class="mt-16 grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div class="bg-gray-50 dark:bg-gray-800 p-8 rounded-2xl border border-gray-200 dark:border-gray-700">
+                            <div class="h-12 w-12 rounded-xl bg-startup-primary/10 flex items-center justify-center text-startup-primary text-xl mb-6">
+                                <i class="fas fa-rocket"></i>
+                            </div>
+                            <h3 class="text-2xl font-bold text-startup-dark dark:text-white">Our Mission</h3>
+                            <p class="mt-3 text-gray-600 dark:text-gray-300 leading-relaxed">
+                                To eliminate deal-sourcing friction and give high-potential startups equal access to growth capital, mentorship, and institutional investor networks.
+                            </p>
+                        </div>
+
+                        <div class="bg-gray-50 dark:bg-gray-800 p-8 rounded-2xl border border-gray-200 dark:border-gray-700">
+                            <div class="h-12 w-12 rounded-xl bg-startup-accent/10 flex items-center justify-center text-startup-accent text-xl mb-6">
+                                <i class="fas fa-eye"></i>
+                            </div>
+                            <h3 class="text-2xl font-bold text-startup-dark dark:text-white">Our Vision</h3>
+                            <p class="mt-3 text-gray-600 dark:text-gray-300 leading-relaxed">
+                                To become Africa’s primary digital ecosystem for venture capital, enabling over $100M in early-stage deals and powering tomorrow's unicorns.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="mt-20">
+                        <h2 class="text-2xl font-bold text-center text-startup-dark dark:text-white mb-12">Core Principles</h2>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-8">
+                            <div class="text-center p-6">
+                                <i class="fas fa-shield-alt text-4xl text-startup-primary mb-4"></i>
+                                <h4 class="text-xl font-bold text-startup-dark dark:text-white">Trust & Verification</h4>
+                                <p class="mt-2 text-sm text-gray-600 dark:text-gray-300">Every investor and startup undergoes structured vetting to ensure high signal and zero spam.</p>
+                            </div>
+                            <div class="text-center p-6">
+                                <i class="fas fa-bolt text-4xl text-startup-primary mb-4"></i>
+                                <h4 class="text-xl font-bold text-startup-dark dark:text-white">Speed & Transparency</h4>
+                                <p class="mt-2 text-sm text-gray-600 dark:text-gray-300">Direct connections eliminate middle-man gatekeepers and accelerate diligence timeframes.</p>
+                            </div>
+                            <div class="text-center p-6">
+                                <i class="fas fa-chart-line text-4xl text-startup-primary mb-4"></i>
+                                <h4 class="text-xl font-bold text-startup-dark dark:text-white">Data Driven</h4>
+                                <p class="mt-2 text-sm text-gray-600 dark:text-gray-300">Intelligent matching criteria ensures founders meet investors who actively target their sector.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
     },
 
     faq: function() {
-        return `<div class="min-h-[70vh] flex items-center justify-center"><p>FAQ page</p></div>`;
+        return `
+            <div class="bg-gray-50 dark:bg-gray-900 py-12 sm:py-16">
+                <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div class="text-center">
+                        <h1 class="text-3xl sm:text-4xl font-extrabold text-startup-dark dark:text-white">Frequently Asked Questions</h1>
+                        <p class="mt-4 text-lg text-gray-600 dark:text-gray-300">Got questions? We're here to help you get the most out of StartupConnect.</p>
+                    </div>
+
+                    <div class="mt-12 space-y-6">
+                        <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+                            <h3 class="text-lg font-bold text-startup-dark dark:text-white">How does StartupConnect match founders with investors?</h3>
+                            <p class="mt-2 text-gray-600 dark:text-gray-300 text-sm leading-relaxed">
+                                Our platform analyzes your startup's sector, stage, funding target, and location against investor criteria to present verified matches on your dashboard.
+                            </p>
+                        </div>
+
+                        <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+                            <h3 class="text-lg font-bold text-startup-dark dark:text-white">Is my deck and financial data kept secure?</h3>
+                            <p class="mt-2 text-gray-600 dark:text-gray-300 text-sm leading-relaxed">
+                                Yes. All pitch documents uploaded to your document room are protected by role-based access control. Only investors you accept connection requests from can view your sensitive pitch materials.
+                            </p>
+                        </div>
+
+                        <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+                            <h3 class="text-lg font-bold text-startup-dark dark:text-white">Who can create an account on StartupConnect?</h3>
+                            <p class="mt-2 text-gray-600 dark:text-gray-300 text-sm leading-relaxed">
+                                Early-to-growth stage startups seeking seed or Series A/B capital, as well as angel investors, VC funds, and syndicate leads looking to source African opportunities.
+                            </p>
+                        </div>
+
+                        <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+                            <h3 class="text-lg font-bold text-startup-dark dark:text-white">Are there any fees for using the platform?</h3>
+                            <p class="mt-2 text-gray-600 dark:text-gray-300 text-sm leading-relaxed">
+                                Basic startup profiles and investor browsing are free. Premium tools for pitch deck analytics, direct messaging, and priority match placement are available on subscription plans.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
     },
 
     blog: function() {
-        return `<div class="min-h-[70vh] flex items-center justify-center"><p>Blog page</p></div>`;
+        return `
+            <div class="bg-white dark:bg-startup-dark py-12 sm:py-16">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div class="text-center max-w-3xl mx-auto">
+                        <span class="text-startup-primary font-semibold text-sm uppercase tracking-wider">Insights & News</span>
+                        <h1 class="mt-2 text-3xl sm:text-4xl font-extrabold text-startup-dark dark:text-white">The StartupConnect Blog</h1>
+                        <p class="mt-4 text-lg text-gray-600 dark:text-gray-300">Expert advice on venture capital, pitch preparation, and African startup growth.</p>
+                    </div>
+
+                    <div class="mt-12 grid grid-cols-1 md:grid-cols-3 gap-8">
+                        <div class="bg-gray-50 dark:bg-gray-800 rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col">
+                            <div class="h-48 bg-startup-primary/20 flex items-center justify-center text-startup-primary text-4xl">
+                                <i class="fas fa-chart-pie"></i>
+                            </div>
+                            <div class="p-6 flex-1 flex flex-col justify-between">
+                                <div>
+                                    <span class="text-xs font-bold text-startup-primary uppercase tracking-wider">Fundraising</span>
+                                    <h3 class="mt-2 text-xl font-bold text-startup-dark dark:text-white">5 Pitch Deck Mistakes African Founders Must Avoid</h3>
+                                    <p class="mt-3 text-sm text-gray-600 dark:text-gray-300">Key insights on how to present financials and total addressable market to international VCs.</p>
+                                </div>
+                                <div class="mt-6 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+                                    <span>5 min read</span>
+                                    <span>July 2025</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-gray-50 dark:bg-gray-800 rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col">
+                            <div class="h-48 bg-startup-accent/20 flex items-center justify-center text-startup-accent text-4xl">
+                                <i class="fas fa-handshake"></i>
+                            </div>
+                            <div class="p-6 flex-1 flex flex-col justify-between">
+                                <div>
+                                    <span class="text-xs font-bold text-startup-accent uppercase tracking-wider">Investor Relations</span>
+                                    <h3 class="mt-2 text-xl font-bold text-startup-dark dark:text-white">Building Long-Term Trust with Angel Syndicates</h3>
+                                    <p class="mt-3 text-sm text-gray-600 dark:text-gray-300">Why monthly investor updates matter more than cold outreach when raising follow-on rounds.</p>
+                                </div>
+                                <div class="mt-6 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+                                    <span>7 min read</span>
+                                    <span>June 2025</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-gray-50 dark:bg-gray-800 rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col">
+                            <div class="h-48 bg-purple-500/20 flex items-center justify-center text-purple-600 text-4xl">
+                                <i class="fas fa-coins"></i>
+                            </div>
+                            <div class="p-6 flex-1 flex flex-col justify-between">
+                                <div>
+                                    <span class="text-xs font-bold text-purple-600 uppercase tracking-wider">Market Trends</span>
+                                    <h3 class="mt-2 text-xl font-bold text-startup-dark dark:text-white">Fintech & Agtech Lead 2025 African VC Inflows</h3>
+                                    <p class="mt-3 text-sm text-gray-600 dark:text-gray-300">A detailed breakdown of capital deployment across West, East, and North African ecosystems.</p>
+                                </div>
+                                <div class="mt-6 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+                                    <span>4 min read</span>
+                                    <span>May 2025</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
     },
 
     terms: function() {
-        return `<div class="min-h-[70vh] flex items-center justify-center"><p>Terms of Service</p></div>`;
+        return `
+            <div class="bg-white dark:bg-startup-dark py-12 sm:py-16">
+                <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <h1 class="text-3xl font-extrabold text-startup-dark dark:text-white">Terms of Service</h1>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">Last updated: July 2025</p>
+
+                    <div class="mt-8 space-y-6 text-gray-700 dark:text-gray-300 leading-relaxed text-sm">
+                        <section>
+                            <h2 class="text-lg font-bold text-startup-dark dark:text-white">1. Acceptance of Terms</h2>
+                            <p class="mt-2">By accessing or using StartupConnect, you agree to be bound by these Terms of Service and all applicable laws and regulations.</p>
+                        </section>
+
+                        <section>
+                            <h2 class="text-lg font-bold text-startup-dark dark:text-white">2. User Verification & Accounts</h2>
+                            <p class="mt-2">Users must provide accurate, current, and complete registration information. Misrepresentation of startup metrics or investor accreditation is grounds for immediate account suspension.</p>
+                        </section>
+
+                        <section>
+                            <h2 class="text-lg font-bold text-startup-dark dark:text-white">3. Confidentiality & Intellectual Property</h2>
+                            <p class="mt-2">Startups retain full ownership of their pitch materials and intellectual property. Investors agree to treat proprietary startup data with strict confidentiality.</p>
+                        </section>
+                    </div>
+                </div>
+            </div>
+        `;
     },
 
     privacy: function() {
-        return `<div class="min-h-[70vh] flex items-center justify-center"><p>Privacy Policy</p></div>`;
+        return `
+            <div class="bg-white dark:bg-startup-dark py-12 sm:py-16">
+                <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <h1 class="text-3xl font-extrabold text-startup-dark dark:text-white">Privacy Policy</h1>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">Last updated: July 2025</p>
+
+                    <div class="mt-8 space-y-6 text-gray-700 dark:text-gray-300 leading-relaxed text-sm">
+                        <section>
+                            <h2 class="text-lg font-bold text-startup-dark dark:text-white">1. Information We Collect</h2>
+                            <p class="mt-2">We collect account information (name, email, phone), user profile data, and messaging logs to facilitate seamless platform interactions.</p>
+                        </section>
+
+                        <section>
+                            <h2 class="text-lg font-bold text-startup-dark dark:text-white">2. How We Use Your Data</h2>
+                            <p class="mt-2">Your information is strictly used for identity verification, intelligent investor-startup matching, and secure communication. We do not sell user data to third parties.</p>
+                        </section>
+
+                        <section>
+                            <h2 class="text-lg font-bold text-startup-dark dark:text-white">3. Data Security</h2>
+                            <p class="mt-2">All sensitive communications and uploaded documents are encrypted in transit and at rest using industry-standard protocols.</p>
+                        </section>
+                    </div>
+                </div>
+            </div>
+        `;
     }
 };
 

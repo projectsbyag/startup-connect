@@ -6,23 +6,43 @@ const User = require('../models/User.js');
 // @access  Private
 exports.sendConnectionRequest = async (req, res, next) => {
     try {
-        const { recipient, message } = req.body;
-        
-        // Check if recipient exists
-        const recipientUser = await User.findById(recipient);
+        let recipientId = req.body.recipient || req.body.recipientId || req.body.investorId || req.body.startupId;
+
+        if (!recipientId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Please provide a valid recipient ID'
+            });
+        }
+
+        // If recipientId belongs to an Investor or Startup profile, resolve to underlying User ID
+        const InvestorModel = require('../models/Investor.js');
+        const StartupModel = require('../models/Startup.js');
+
+        const investor = await InvestorModel.findById(recipientId);
+        if (investor && investor.userId) {
+            recipientId = investor.userId;
+        } else {
+            const startup = await StartupModel.findById(recipientId);
+            if (startup && startup.userId) {
+                recipientId = startup.userId;
+            }
+        }
+
+        const recipientUser = await User.findById(recipientId);
         
         if (!recipientUser) {
             return res.status(404).json({
                 success: false,
-                message: 'Recipient not found'
+                message: 'Recipient user not found'
             });
         }
         
         // Check if connection already exists
         const existingConnection = await Connection.findOne({
             $or: [
-                { requester: req.user.id, recipient },
-                { requester: recipient, recipient: req.user.id }
+                { requester: req.user.id, recipient: recipientId },
+                { requester: recipientId, recipient: req.user.id }
             ]
         });
         
@@ -36,8 +56,8 @@ exports.sendConnectionRequest = async (req, res, next) => {
         // Create connection request
         const connection = await Connection.create({
             requester: req.user.id,
-            recipient,
-            message: message || ''
+            recipient: recipientId,
+            message: req.body.message || ''
         });
         
         res.status(201).json({

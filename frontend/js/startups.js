@@ -6,7 +6,7 @@ const StartupsPage = {
      * Render startups page
      * @returns {string} - HTML content
      */
-    render: function() {
+    render: function () {
         return `
             <div class="bg-gray-50 dark:bg-gray-900 py-12">
                 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -181,35 +181,35 @@ const StartupsPage = {
             </div>
         `;
     },
-    
+
     /**
      * Set up event listeners for the startups page
      * @param {App} app - Main application instance
      */
-    setupEventListeners: function(app) {
+    setupEventListeners: function (app) {
         this.app = app;
         // Load startups when page is first displayed
         this.loadStartups();
-        
+
         // Filter form submission
         const filterForm = document.getElementById('startup-filter-form');
         if (filterForm) {
             filterForm.addEventListener('submit', (e) => {
                 e.preventDefault();
-                
+
                 const industry = document.getElementById('industry-filter').value;
                 const stage = document.getElementById('stage-filter').value;
                 const location = document.getElementById('location-filter').value;
-                
+
                 const filters = {};
                 if (industry) filters.industry = industry;
                 if (stage) filters.funding = stage;
                 if (location) filters.location = location;
-                
+
                 this.loadStartups(filters);
             });
         }
-        
+
         // Reset filters button
         const resetBtn = document.getElementById('reset-filters');
         if (resetBtn) {
@@ -217,11 +217,11 @@ const StartupsPage = {
                 document.getElementById('industry-filter').value = '';
                 document.getElementById('stage-filter').value = '';
                 document.getElementById('location-filter').value = '';
-                
+
                 this.loadStartups();
             });
         }
-        
+
         // Sort dropdown
         const sortDropdown = document.getElementById('sort-startups');
         if (sortDropdown) {
@@ -229,7 +229,7 @@ const StartupsPage = {
                 this.sortStartups(sortDropdown.value);
             });
         }
-        
+
         // Clear filters button (when no results)
         const clearFiltersBtn = document.getElementById('clear-startup-filters');
         if (clearFiltersBtn) {
@@ -237,11 +237,11 @@ const StartupsPage = {
                 document.getElementById('industry-filter').value = '';
                 document.getElementById('stage-filter').value = '';
                 document.getElementById('location-filter').value = '';
-                
+
                 this.loadStartups();
             });
         }
-        
+
         // Retry button (when error occurs)
         const retryBtn = document.getElementById('retry-startups-btn');
         if (retryBtn) {
@@ -249,7 +249,7 @@ const StartupsPage = {
                 this.loadStartups();
             });
         }
-        
+
         // Close startup details modal
         const closeDetailsBtn = document.getElementById('close-startup-details-btn');
         if (closeDetailsBtn) {
@@ -257,7 +257,7 @@ const StartupsPage = {
                 document.getElementById('startup-details-modal').classList.add('hidden');
             });
         }
-        
+
         // Close modal when clicking outside
         const detailsModal = document.getElementById('startup-details-modal');
         if (detailsModal) {
@@ -268,35 +268,35 @@ const StartupsPage = {
             });
         }
     },
-    
+
     /**
      * Load startups from API
      * @param {Object} filters - Filter parameters
      * @param {number} page - Page number
      */
-    loadStartups: async function(filters = {}, page = 1) {
+    loadStartups: async function (filters = {}, page = 1) {
         // Show loading state
         document.getElementById('startups-loading').classList.remove('hidden');
         document.getElementById('startups-error').classList.add('hidden');
         document.getElementById('startups-content').classList.add('hidden');
-        
+
         try {
             // Fetch startups from API with pagination
             const pageSize = 12;
             const apiFilters = { ...filters, page, limit: pageSize };
             const response = await API.getStartups(apiFilters);
-            
+
             // Hide loading state, show content
             document.getElementById('startups-loading').classList.add('hidden');
             document.getElementById('startups-content').classList.remove('hidden');
-            
+
             // Update startups count
             const count = response.total || response.startups.length;
             document.getElementById('startups-count').textContent = `${count} Startups Found`;
-            
+
             // Render startups
             this.renderStartups(response.startups);
-            
+
             // Show no results message if needed
             if (response.startups.length === 0) {
                 document.getElementById('no-startups-found').classList.remove('hidden');
@@ -305,7 +305,7 @@ const StartupsPage = {
             } else {
                 document.getElementById('no-startups-found').classList.add('hidden');
                 document.getElementById('startups-list').classList.remove('hidden');
-                
+
                 // Render pagination if needed
                 if (response.total > pageSize) {
                     this.renderPagination(response.total, page, pageSize, filters);
@@ -313,7 +313,7 @@ const StartupsPage = {
                 } else {
                     document.getElementById('startups-pagination').classList.add('hidden');
                 }
-                
+
                 // Attach event listeners to startup cards
                 this.attachStartupCardListeners();
             }
@@ -328,18 +328,18 @@ const StartupsPage = {
     /**
      * Load matches tab content by calling API to get matching startups
      */
-    
+
     /**
      * Render startups list
      * @param {Array} startups - List of startup objects
      */
-    renderStartups: function(startups) {
+    renderStartups: function (startups) {
         const container = document.getElementById('startups-list');
-        
+
         if (!container) return;
-        
+
         let html = '';
-        
+
         startups.forEach(startup => {
             html += `
                 <div class="startup-card bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden" data-id="${startup._id}">
@@ -381,14 +381,14 @@ const StartupsPage = {
                 </div>
             `;
         });
-        
+
         container.innerHTML = html;
     },
-    
+
     /**
      * Attach event listeners to startup cards
      */
-    attachStartupCardListeners: function() {
+    attachStartupCardListeners: function () {
         // View startup details buttons
         document.querySelectorAll('.view-startup-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
@@ -396,7 +396,7 @@ const StartupsPage = {
                 this.showStartupDetails(startupId);
             });
         });
-        
+
         // Entire card click
         document.querySelectorAll('.startup-card').forEach(card => {
             card.addEventListener('click', (e) => {
@@ -408,16 +408,16 @@ const StartupsPage = {
             });
         });
     },
-    
+
     /**
      * Show startup details in modal
      * @param {string} startupId - Startup ID
      */
-    showStartupDetails: async function(startupId) {
+    showStartupDetails: async function (startupId) {
         // Show modal with loading state
         const modal = document.getElementById('startup-details-modal');
         const contentContainer = document.getElementById('startup-details-content');
-        
+
         modal.classList.remove('hidden');
         contentContainer.innerHTML = `
             <div class="animate-pulse">
@@ -433,7 +433,7 @@ const StartupsPage = {
                 </div>
             </div>
         `;
-        
+
         try {
             // Fetch startup details
             const response = await API.getStartup(startupId);
@@ -441,7 +441,7 @@ const StartupsPage = {
                 throw new Error('Failed to load startup details');
             }
             const startup = response.startup;
-            
+
             // Render startup details
             contentContainer.innerHTML = `
                 <div class="flex justify-between items-start">
@@ -458,12 +458,12 @@ const StartupsPage = {
                         </div>
                     </div>
                     <div>
-                        ${Auth.isUserAuthenticated() && Auth.getCurrentUser().userType === 'investor' ? 
-                            `<button id="connect-with-startup-btn" class="px-4 py-2 bg-startup-primary text-white rounded-md hover:bg-opacity-90" data-id="${startup._id}">
+                        ${Auth.isUserAuthenticated() && Auth.getCurrentUser().userType === 'investor' ?
+                    `<button id="connect-with-startup-btn" class="px-4 py-2 bg-startup-primary text-white rounded-md hover:bg-opacity-90" data-id="${startup._id}">
                                 Connect
-                            </button>` : 
-                            ''
-                        }
+                            </button>` :
+                    ''
+                }
                     </div>
                 </div>
                 
@@ -552,10 +552,10 @@ const StartupsPage = {
                     </div>
                 ` : ''}
             `;
-            
+
             // Add event listeners to buttons in the modal
             this.attachStartupDetailsListeners(startup);
-            
+
         } catch (error) {
             // Show error in modal
             contentContainer.innerHTML = `
@@ -572,22 +572,22 @@ const StartupsPage = {
                     </button>
                 </div>
             `;
-            
+
             // Add retry button listener
             document.getElementById('retry-startup-details-btn')?.addEventListener('click', (e) => {
                 const id = e.target.dataset.id;
                 this.showStartupDetails(id);
             });
-            
+
             console.error('Error loading startup details:', error);
         }
     },
-    
+
     /**
      * Attach event listeners to startup details modal
      * @param {Object} startup - Startup data
      */
-    attachStartupDetailsListeners: function(startup) {
+    attachStartupDetailsListeners: function (startup) {
         // Connect with startup button
         const connectBtn = document.getElementById('connect-with-startup-btn');
         if (connectBtn) {
@@ -623,7 +623,7 @@ const StartupsPage = {
                         // Already connected or pending
                         if (error.message &&
                             (error.message.includes('Connection request already exists') ||
-                             error.message.includes('users are already connected'))) {
+                                error.message.includes('users are already connected'))) {
                             connectBtn.innerHTML = `<i class="fas fa-check mr-2"></i> Connected`;
                             connectBtn.classList.remove('bg-startup-primary');
                             connectBtn.classList.add('bg-green-500', 'connected');
@@ -720,10 +720,10 @@ const StartupsPage = {
      * Sort startups list
      * @param {string} sortBy - Sort criteria
      */
-    sortStartups: function(sortBy) {
+    sortStartups: function (sortBy) {
         const container = document.getElementById('startups-list');
         const cards = Array.from(container.querySelectorAll('.startup-card'));
-        
+
         cards.sort((a, b) => {
             switch (sortBy) {
                 case 'newest':
@@ -743,21 +743,21 @@ const StartupsPage = {
                     return 0;
             }
         });
-        
+
         // Re-append sorted cards
         cards.forEach(card => container.appendChild(card));
     },
-    
+
     /**
      * Extract funding amount from startup card
      * @param {Element} card - Startup card element
      * @returns {number} - Funding amount
      */
-    extractFundingAmount: function(card) {
+    extractFundingAmount: function (card) {
         const fundingText = card.querySelector('p.font-medium:nth-of-type(2)').textContent;
         return parseInt(fundingText.replace(/[^0-9]/g, '')) || 0;
     },
-    
+
     /**
      * Render pagination controls
      * @param {number} total - Total number of items
@@ -765,38 +765,37 @@ const StartupsPage = {
      * @param {number} pageSize - Items per page
      * @param {Object} filters - Current filters
      */
-    renderPagination: function(total, currentPage, pageSize, filters) {
+    renderPagination: function (total, currentPage, pageSize, filters) {
         const container = document.getElementById('startups-pagination');
         const totalPages = Math.ceil(total / pageSize);
-        
+
         let html = `
             <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
         `;
-        
+
         // Previous page button
         html += `
             <button ${currentPage === 1 ? 'disabled' : ''} 
-                class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-medium ${
-                    currentPage === 1 
-                    ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed' 
-                    : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
-                }" 
+                class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-medium ${currentPage === 1
+                ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
+                : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
+            }" 
                 data-page="${currentPage - 1}">
                 <span class="sr-only">Previous</span>
                 <i class="fas fa-chevron-left"></i>
             </button>
         `;
-        
+
         // Page numbers
         const maxDisplayedPages = 5;
         let startPage = Math.max(1, currentPage - Math.floor(maxDisplayedPages / 2));
         let endPage = Math.min(totalPages, startPage + maxDisplayedPages - 1);
-        
+
         // Adjust if we're near the end
         if (endPage - startPage + 1 < maxDisplayedPages) {
             startPage = Math.max(1, endPage - maxDisplayedPages + 1);
         }
-        
+
         // First page (if not in range)
         if (startPage > 1) {
             html += `
@@ -804,7 +803,7 @@ const StartupsPage = {
                     1
                 </button>
             `;
-            
+
             if (startPage > 2) {
                 html += `
                     <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -813,20 +812,19 @@ const StartupsPage = {
                 `;
             }
         }
-        
+
         // Page numbers
         for (let i = startPage; i <= endPage; i++) {
             html += `
-                <button class="relative inline-flex items-center px-4 py-2 border ${
-                    i === currentPage 
-                    ? 'border-startup-primary bg-startup-primary bg-opacity-10 text-startup-primary' 
+                <button class="relative inline-flex items-center px-4 py-2 border ${i === currentPage
+                    ? 'border-startup-primary bg-startup-primary bg-opacity-10 text-startup-primary'
                     : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
                 } text-sm font-medium" data-page="${i}">
                     ${i}
                 </button>
             `;
         }
-        
+
         // Last page (if not in range)
         if (endPage < totalPages) {
             if (endPage < totalPages - 1) {
@@ -836,39 +834,38 @@ const StartupsPage = {
                     </span>
                 `;
             }
-            
+
             html += `
                 <button class="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700" data-page="${totalPages}">
                     ${totalPages}
                 </button>
             `;
         }
-        
+
         // Next page button
         html += `
             <button ${currentPage === totalPages ? 'disabled' : ''} 
-                class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-medium ${
-                    currentPage === totalPages 
-                    ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed' 
-                    : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
-                }" 
+                class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-medium ${currentPage === totalPages
+                ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
+                : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
+            }" 
                 data-page="${currentPage + 1}">
                 <span class="sr-only">Next</span>
                 <i class="fas fa-chevron-right"></i>
             </button>
         `;
-        
+
         html += `</nav>`;
-        
+
         container.innerHTML = html;
-        
+
         // Add event listeners to pagination buttons
         container.querySelectorAll('button[data-page]').forEach(btn => {
             if (!btn.disabled) {
                 btn.addEventListener('click', (e) => {
                     const page = parseInt(e.currentTarget.dataset.page);
                     this.loadStartups(filters, page);
-                    
+
                     // Scroll to top of startups section
                     document.getElementById('startups-content').scrollIntoView({ behavior: 'smooth' });
                 });

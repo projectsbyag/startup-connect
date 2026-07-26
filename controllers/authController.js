@@ -7,7 +7,8 @@ const config = require('../config/config.js');
 // @access  Public
 exports.register = async (req, res, next) => {
     try {
-        const { name, email, password, userType } = req.body;
+        const { name, email, password } = req.body;
+        const userType = req.body.userType || req.body.role;
         
         // Validate user type
         if (!['startup', 'investor'].includes(userType)) {

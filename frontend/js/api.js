@@ -3,12 +3,26 @@
  */
 class ApiService {
     constructor() {
-        // API base URL - change this to your actual backend URL in production
-        this.baseUrl = 'https://startup-connect-7y5d.onrender.com/api';
+        // API base URL - dynamically select local endpoint in development
+        const isLocalHost = window.location.hostname === 'localhost' || 
+                            window.location.hostname === '127.0.0.1' || 
+                            window.location.port === '5000' || 
+                            window.location.port === '5500' || 
+                            window.location.port === '3000';
+
+        this.baseUrl = isLocalHost
+            ? 'http://localhost:5000/api'
+            : 'https://startup-connect-7y5d.onrender.com/api';
         this.token = localStorage.getItem('token') || null;
+        this.cache = new Map();
+        this.cacheTTL = 30000; // 30s cache TTL for instant tab navigation
         
         // Debug: Log API initialization
         console.log('API Service initialized with baseUrl:', this.baseUrl);
+    }
+
+    clearCache() {
+        this.cache.clear();
     }
 
     /**
@@ -17,6 +31,7 @@ class ApiService {
      */
     setToken(token) {
         this.token = token;
+        this.clearCache();
         if (token) {
             localStorage.setItem('token', token);
         } else {
@@ -64,18 +79,30 @@ class ApiService {
     }
 
     /**
-     * Make a GET request
+     * Make a GET request with optional client-side caching
      * @param {string} endpoint - API endpoint
+     * @param {boolean} useCache - Whether to use cache
      * @returns {Promise} - Response data
      */
-    async get(endpoint) {
+    async get(endpoint, useCache = true) {
+        if (useCache && this.cache.has(endpoint)) {
+            const cached = this.cache.get(endpoint);
+            if (Date.now() - cached.timestamp < this.cacheTTL) {
+                return cached.data;
+            }
+        }
+
         try {
             const response = await fetch(`${this.baseUrl}${endpoint}`, {
                 method: 'GET',
                 headers: this.getHeaders(),
             });
 
-            return await this.handleResponse(response);
+            const data = await this.handleResponse(response);
+            if (useCache) {
+                this.cache.set(endpoint, { data, timestamp: Date.now() });
+            }
+            return data;
         } catch (error) {
             console.error(`GET request to ${endpoint} failed:`, error);
             throw error;
@@ -89,6 +116,7 @@ class ApiService {
      * @returns {Promise} - Response data
      */
     async post(endpoint, data) {
+        this.clearCache();
         try {
             const response = await fetch(`${this.baseUrl}${endpoint}`, {
                 method: 'POST',
@@ -110,6 +138,7 @@ class ApiService {
      * @returns {Promise} - Response data
      */
     async put(endpoint, data) {
+        this.clearCache();
         try {
             const response = await fetch(`${this.baseUrl}${endpoint}`, {
                 method: 'PUT',
@@ -141,6 +170,15 @@ class ApiService {
             console.error(`DELETE request to ${endpoint} failed:`, error);
             throw error;
         }
+    }
+
+    /**
+     * Send connection request
+     * @param {string} recipient - Recipient User/Investor/Startup ID
+     * @param {string} message - Optional message
+     */
+    async sendConnectionRequest(recipient, message = '') {
+        return await this.post('/connections/request', { recipient, message });
     }
 
     /**

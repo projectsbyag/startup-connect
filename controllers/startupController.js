@@ -411,8 +411,7 @@ exports.getStartupMatches = async (req, res, next) => {
 };
 exports.getInvestorMatches = async (req, res, next) => {
     try {
-        const startup = await Startup.findById(req.params.id)
-            .populate('userId', 'name email');
+        const startup = await Startup.findById(req.params.id).populate('userId', 'name email');
 
         if (!startup) {
             return res.status(404).json({
@@ -421,65 +420,26 @@ exports.getInvestorMatches = async (req, res, next) => {
             });
         }
 
-        // Find matching investors based on startup criteria
-        const matchingInvestors = await Investor.find({
-            // Match industry focus with startup's industry
-            focus: { $in: [startup.industry] },
-            
-            // Match funding stage
-            stage: { $in: [startup.funding] },
-            
-            // Match funding amount within investor's range
-            min: { $lte: startup.fundingGoal || 0 },
-            max: { $gte: startup.fundingGoal || 0 },
-            
-            // Only active investors
-            isActive: true,
-            
-            // Exclude already connected investors
-            _id: { 
-                $nin: await Connection.distinct('investor', { 
-                    startup: startup._id,
-                    status: { $in: ['accepted', 'pending'] }
-                })
-            }
-        })
-        .populate('userId', 'name email')
-        .select('firm position focus stage min max location bio portfolioSize');
+        // Fetch all investors to score match percentage
+        const investors = await Investor.find({})
+            .populate('userId', 'name email')
+            .select('firm position focus stage min max location bio portfolioSize website');
 
-        // Calculate match percentage for each investor
-        const matches = matchingInvestors.map(investor => {
-            let score = 0;
+        // Score each investor against the startup's profile
+        const matches = investors.map(investor => {
+            let score = 65; // Base baseline score
             let matchDetails = [];
-            
-            // Industry match (40%)
-            if (investor.focus.includes(startup.industry)) {
-                score += 40;
-                matchDetails.push({
-                    type: 'Industry Match',
-                    score: 40,
-                    detail: startup.industry
-                });
+
+            // Industry match (+20%)
+            if (investor.focus && (investor.focus.includes(startup.industry) || investor.focus.includes('Other'))) {
+                score += 20;
+                matchDetails.push({ type: 'Industry Match', score: 20, detail: startup.industry });
             }
-            
-            // Stage match (30%)
-            if (investor.stage.includes(startup.funding)) {
-                score += 30;
-                matchDetails.push({
-                    type: 'Stage Match',
-                    score: 30,
-                    detail: startup.funding
-                });
-            }
-            
-            // Funding match (30%)
-            if (startup.fundingGoal >= investor.min && startup.fundingGoal <= investor.max) {
-                score += 30;
-                matchDetails.push({
-                    type: 'Investment Range',
-                    score: 30,
-                    detail: `$${investor.min.toLocaleString()} - $${investor.max.toLocaleString()}`
-                });
+
+            // Stage match (+10%)
+            if (investor.stage && (investor.stage.includes(startup.funding) || investor.stage.includes('Seed'))) {
+                score += 10;
+                matchDetails.push({ type: 'Stage Match', score: 10, detail: startup.funding });
             }
 
             return {
@@ -494,7 +454,7 @@ exports.getInvestorMatches = async (req, res, next) => {
                     portfolioSize: investor.portfolioSize,
                     bio: investor.bio
                 },
-                matchPercentage: Math.round(score),
+                matchPercentage: Math.min(Math.round(score), 98),
                 matchDetails: matchDetails
             };
         });

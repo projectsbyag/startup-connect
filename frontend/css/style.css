@@ -236,3 +236,47 @@ input.is-invalid {
         overflow-x: auto;
     }
 }
+
+/* Premium UI Enhancements */
+.glass-card {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+.dark .glass-card {
+    background: rgba(30, 41, 59, 0.75);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.modal-animate-in {
+    animation: modalPop 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes modalPop {
+    0% {
+        opacity: 0;
+        transform: scale(0.95) translateY(10px);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.gradient-text {
+    background: linear-gradient(135deg, #5D5CDE 0%, #4CCD99 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.btn-glow {
+    transition: all 0.25s ease;
+}
+
+.btn-glow:hover {
+    box-shadow: 0 10px 25px -5px rgba(93, 92, 222, 0.4);
+}
