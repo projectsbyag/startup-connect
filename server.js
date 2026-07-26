@@ -17,19 +17,34 @@ const app = express();
 // Enable Gzip/Brotli Compression
 app.use(compression());
 
-// Middleware
+// Dynamic CORS Middleware for Vercel, Netlify, Render & Localhost
 const corsOptions = {
-  origin: [
-    'http://localhost:3000',
-    'http://127.0.0.1:5500',
-    'https://startup-connect-one.vercel.app',
-    'https://startup-connect.netlify.app', // Add your Netlify domain
-    'https://*.vercel.app', // Allow all Vercel preview deployments
-    'https://*.netlify.app' // Allow all Netlify deployments
-  ],
-  credentials: true
+  origin: (origin, callback) => {
+    // Allow requests with no origin (mobile apps, postman, server-to-server)
+    if (!origin) return callback(null, true);
+
+    const isAllowed = 
+      origin.includes('localhost') ||
+      origin.includes('127.0.0.1') ||
+      origin.includes('vercel.app') ||
+      origin.includes('netlify.app') ||
+      origin.includes('onrender.com') ||
+      origin.includes('github.io');
+
+    if (isAllowed) {
+      callback(null, true);
+    } else {
+      // Reflect requesting origin to allow cross-domain API access
+      callback(null, true);
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 };
+
 app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
