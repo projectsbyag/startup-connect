@@ -477,29 +477,36 @@ exports.getStartupDocuments = async (req, res, next) => {
         const startup = await Startup.findOne({ userId: req.user.id });
         
         if (!startup) {
-            return res.status(404).json({
-                success: false,
-                message: 'Startup profile not found'
+            return res.status(200).json({
+                success: true,
+                documents: []
             });
         }
         
         res.status(200).json({
             success: true,
-            documents: startup.documents
+            documents: startup.documents || []
         });
         
     } catch (error) {
         next(error);
     }
 };
+
 exports.getStartupAnalytics = async (req, res, next) => {
     try {
         const startup = await Startup.findOne({ userId: req.user.id });
-
+        
         if (!startup) {
-            return res.status(404).json({
-                success: false,
-                message: 'Startup profile not found'
+            return res.status(200).json({
+                success: true,
+                data: {
+                    totalViews: 0,
+                    profileViews: 0,
+                    pitchDeckViews: 0,
+                    connectionRequests: 0,
+                    monthlyViews: []
+                }
             });
         }
 

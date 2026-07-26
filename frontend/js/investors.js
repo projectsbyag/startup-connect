@@ -419,9 +419,25 @@ const InvestorsPage = {
      * @param {string} investorId - Investor ID
      */
     showInvestorDetails: async function(investorId) {
-        // Show modal with loading state
-        const modal = document.getElementById('investor-details-modal');
-        const contentContainer = document.getElementById('investor-details-content');
+        // Get or dynamically inject modal container
+        let modal = document.getElementById('investor-details-modal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'investor-details-modal';
+            modal.className = 'fixed inset-0 z-50 overflow-y-auto hidden bg-black bg-opacity-50 flex items-center justify-center p-4';
+            modal.innerHTML = `
+                <div class="bg-white dark:bg-gray-800 rounded-lg max-w-2xl w-full p-6 relative shadow-xl">
+                    <button class="absolute top-4 right-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 text-xl font-bold" onclick="document.getElementById('investor-details-modal').classList.add('hidden')">&times;</button>
+                    <div id="investor-details-content"></div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        let contentContainer = document.getElementById('investor-details-content');
+        if (!contentContainer) {
+            contentContainer = modal.querySelector('#investor-details-content');
+        }
         
         modal.classList.remove('hidden');
         contentContainer.innerHTML = `

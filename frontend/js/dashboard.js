@@ -1553,8 +1553,30 @@ const DashboardPage = {
         try {
             // Load startup profile
             const user = Auth.getCurrentUser();
-            const response = await API.getStartupByUserId(user._id);
-            const profile = response.startup;
+            let profile = null;
+            try {
+                const response = await API.getStartupByUserId(user._id);
+                profile = response?.startup || response?.data || null;
+            } catch (e) {
+                console.warn('Could not fetch startup profile for editing:', e);
+            }
+
+            if (!profile) {
+                profile = {
+                    _id: '',
+                    name: user?.name || '',
+                    tagline: '',
+                    description: '',
+                    pitch: '',
+                    industry: 'Fintech',
+                    funding: 'Pre-seed',
+                    fundingGoal: 50000,
+                    amountRaised: 0,
+                    location: '',
+                    website: '',
+                    socialMedia: {}
+                };
+            }
 
             // Render profile form
             container.innerHTML = `
