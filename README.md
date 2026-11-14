@@ -1,4 +1,3 @@
-```markdown
 # Startup Connect
 
 Startup Connect is a platform for connecting startups, investors, and users through a REST API and web frontend. The backend is built with Node.js, Express, and MongoDB, with JWT-based authentication and separate resources for startups, investors, users, messages, and connections.
